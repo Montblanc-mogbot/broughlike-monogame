@@ -66,9 +66,7 @@ public sealed class Game1 : Game
             return;
         }
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-        _app.Draw(_spriteBatch);
-        _spriteBatch.End();
+        _app.Draw(_spriteBatch, GraphicsDevice.Viewport);
 
         base.Draw(gameTime);
     }

@@ -17,11 +17,24 @@ public sealed class GameRenderer
         _pixel = pixel;
     }
 
-    public void Draw(SpriteBatch spriteBatch, GameSession session)
+    public void Draw(SpriteBatch spriteBatch, GameSession session, Viewport viewport)
     {
+        var destination = CalculateDestinationRect(viewport);
+        var scale = destination.Width / (float)Layout.ScreenWidth;
+        var transform = Matrix.CreateScale(scale, scale, 1f) * Matrix.CreateTranslation(destination.X, destination.Y, 0f);
+
+        spriteBatch.GraphicsDevice.Viewport = viewport;
+        spriteBatch.GraphicsDevice.ScissorRectangle = destination;
+
+        spriteBatch.Begin(
+            samplerState: SamplerState.PointClamp,
+            transformMatrix: transform,
+            rasterizerState: ScissorRasterizerState.Instance);
+
         if (session.Mode is GameMode.Title)
         {
             DrawTitle(spriteBatch, session);
+            spriteBatch.End();
             return;
         }
 
@@ -32,6 +45,8 @@ public sealed class GameRenderer
         {
             DrawOverlay(spriteBatch, "You Died");
         }
+
+        spriteBatch.End();
     }
 
     private void DrawTitle(SpriteBatch spriteBatch, GameSession session)
@@ -147,6 +162,24 @@ public sealed class GameRenderer
     private static Rectangle TileRect(Point2 point, Point2 shake)
         => new(point.X * Layout.TileSize + shake.X, point.Y * Layout.TileSize + shake.Y, Layout.TileSize, Layout.TileSize);
 
+    public static Rectangle CalculateDestinationRect(Viewport viewport)
+    {
+        var scale = MathF.Min(
+            viewport.Width / (float)Layout.ScreenWidth,
+            viewport.Height / (float)Layout.ScreenHeight);
+
+        if (scale <= 0f)
+        {
+            return new Rectangle(0, 0, Layout.ScreenWidth, Layout.ScreenHeight);
+        }
+
+        var width = Math.Max(1, (int)MathF.Floor(Layout.ScreenWidth * scale));
+        var height = Math.Max(1, (int)MathF.Floor(Layout.ScreenHeight * scale));
+        var x = (viewport.Width - width) / 2;
+        var y = (viewport.Height - height) / 2;
+        return new Rectangle(x, y, width, height);
+    }
+
     private static Rectangle Shrink(Rectangle rect, int amount)
         => new(rect.X + amount, rect.Y + amount, rect.Width - amount * 2, rect.Height - amount * 2);
 
@@ -169,4 +202,14 @@ public sealed class GameRenderer
 
     private static string RightPad(params object[] values)
         => string.Concat(values.Select(value => value.ToString()?.PadRight(10) ?? string.Empty));
+}
+
+internal sealed class ScissorRasterizerState : RasterizerState
+{
+    public static readonly ScissorRasterizerState Instance = new();
+
+    private ScissorRasterizerState()
+    {
+        ScissorTestEnable = true;
+    }
 }

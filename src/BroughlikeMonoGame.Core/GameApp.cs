@@ -52,7 +52,7 @@ public sealed class GameApp
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch) => _renderer.Draw(spriteBatch, _session);
+    public void Draw(SpriteBatch spriteBatch, Viewport viewport) => _renderer.Draw(spriteBatch, _session, viewport);
 
     private static bool AnyActionPressed(InputSnapshot input)
         => input.IsNewKeyPress(Keys.W)
