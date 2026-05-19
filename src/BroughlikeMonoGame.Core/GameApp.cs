@@ -21,6 +21,7 @@ public sealed class GameApp
     public void Update(InputSnapshot input)
     {
         _session.AdvanceFrame();
+        _session.RecordRawInputDebug($"curr={input.DescribeCurrentKeys()} prev={input.DescribePreviousKeys()}");
 
         if (_session.Mode is GameMode.Title or GameMode.Dead)
         {

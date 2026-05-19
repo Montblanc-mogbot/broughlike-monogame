@@ -54,6 +54,8 @@ public sealed class GameSession
 
     public string LastInputDebug { get; private set; } = "none";
 
+    public string LastRawInputDebug { get; private set; } = "curr=none prev=none";
+
     public string LastActionDebug { get; private set; } = "boot";
 
     public void ShowTitle()
@@ -178,12 +180,15 @@ public sealed class GameSession
 
     public void RecordInputDebug(string message) => LastInputDebug = message;
 
+    public void RecordRawInputDebug(string message) => LastRawInputDebug = message;
+
     public IReadOnlyList<string> GetDebugLines()
     {
         if (Player is null)
         {
             return [
                 $"Input: {LastInputDebug}",
+                $"Raw: {LastRawInputDebug}",
                 $"Action: {LastActionDebug}",
                 "Player: not spawned"
             ];
@@ -192,6 +197,7 @@ public sealed class GameSession
         var lines = new List<string>
         {
             $"Input: {LastInputDebug}",
+            $"Raw: {LastRawInputDebug}",
             $"Action: {LastActionDebug}",
             $"Player: ({Player.Tile.Position.X},{Player.Tile.Position.Y}) HP {MathF.Ceiling(Player.Hp)} L({Player.LastMove.X},{Player.LastMove.Y})"
         };
