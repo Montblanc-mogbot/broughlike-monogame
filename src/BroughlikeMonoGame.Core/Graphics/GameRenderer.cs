@@ -291,9 +291,10 @@ public sealed class GameRenderer
         DrawText(spriteBatch, $"Score: {session.Score}", new Vector2(x, 65), Palette.UiPrimary, 0.8f);
         DrawText(spriteBatch, $"HP: {MathF.Ceiling(session.Player.Hp)}/{GameConstants.MaxHp}", new Vector2(x, 100), Palette.UiMuted, 0.65f);
 
-        for (var i = 0; i < session.PlayerSpells.Count; i++)
+        for (var i = 0; i < session.Inventory.SlotCount; i++)
         {
-            var text = $"{i + 1}) {session.PlayerSpells[i] ?? string.Empty}";
+            var item = session.Inventory.GetItem(i);
+            var text = $"{i + 1}) {item?.DisplayName ?? string.Empty}";
             DrawText(spriteBatch, text, new Vector2(x, 145 + i * 34), Palette.UiAccent, 0.62f);
         }
 

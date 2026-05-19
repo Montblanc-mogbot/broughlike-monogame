@@ -3,12 +3,12 @@ using System.Linq;
 
 namespace BroughlikeMonoGame.Core;
 
-public static class SpellBook
+public static class ItemCatalog
 {
-    public static IReadOnlyList<SpellDefinition> Create() =>
+    public static IReadOnlyList<ItemDefinition> CreateTutorialItems() =>
     [
-        new("WOOP", session => session.TeleportActor(session.Player, session.GetRandomPassableTile(), 0)),
-        new("QUAKE", session =>
+        new("woop", "WOOP", session => session.TeleportActor(session.Player, session.GetRandomPassableTile(), 0)),
+        new("quake", "QUAKE", session =>
         {
             foreach (var tile in session.Grid.AllTiles())
             {
@@ -21,15 +21,15 @@ public static class SpellBook
 
             session.QueueShake(20);
         }),
-        new("MAELSTROM", session =>
+        new("maelstrom", "MAELSTROM", session =>
         {
             foreach (var monster in session.GetEnemies())
             {
                 session.TeleportActor(monster, session.GetRandomPassableTile(), 2);
             }
         }),
-        new("MULLIGAN", session => session.StartLevel(1, session.PlayerSpells)),
-        new("AURA", session =>
+        new("mulligan", "MULLIGAN", session => session.StartLevel(1, session.Inventory.ToItemIds())),
+        new("aura", "AURA", session =>
         {
             foreach (var tile in session.Player.Tile.GetAdjacentNeighbors(session.Grid))
             {
@@ -40,7 +40,7 @@ public static class SpellBook
             session.PlaceEffect(session.Player.Tile, EffectKind.Heal);
             session.Player.Heal(1);
         }),
-        new("DASH", session =>
+        new("dash", "DASH", session =>
         {
             var current = session.Player.Tile;
             while (true)
@@ -70,13 +70,13 @@ public static class SpellBook
                 }
             }
         }),
-        new("DIG", session =>
+        new("dig", "DIG", session =>
         {
             session.DigAllWalls();
             session.PlaceEffect(session.Player.Tile, EffectKind.Heal);
             session.Player.Heal(2);
         }),
-        new("KINGMAKER", session =>
+        new("kingmaker", "KINGMAKER", session =>
         {
             foreach (var monster in session.GetEnemies())
             {
@@ -84,19 +84,10 @@ public static class SpellBook
                 monster.Tile.HasTreasure = true;
             }
         }),
-        new("ALCHEMY", session => session.TransformAdjacentWallsToTreasure(session.Player.Tile)),
-        new("POWER", session => session.Player.BonusAttack = 5),
-        new("BUBBLE", session =>
-        {
-            for (var i = session.PlayerSpells.Count - 1; i > 0; i--)
-            {
-                if (session.PlayerSpells[i] is null)
-                {
-                    session.PlayerSpells[i] = session.PlayerSpells[i - 1];
-                }
-            }
-        }),
-        new("BRAVERY", session =>
+        new("alchemy", "ALCHEMY", session => session.TransformAdjacentWallsToTreasure(session.Player.Tile)),
+        new("power", "POWER", session => session.Player.BonusAttack = 5),
+        new("bubble", "BUBBLE", session => session.Inventory.CopyBackwardIntoEmptySlots()),
+        new("bravery", "BRAVERY", session =>
         {
             session.Player.Shield = 2;
             foreach (var monster in session.GetEnemies())
@@ -104,15 +95,15 @@ public static class SpellBook
                 monster.Stunned = true;
             }
         }),
-        new("BOLT", session => session.BoltTravel(session.Player.LastMove, EffectKind.Bolt, 4)),
-        new("CROSS", session =>
+        new("bolt", "BOLT", session => session.BoltTravel(session.Player.LastMove, EffectKind.Bolt, 4)),
+        new("cross", "CROSS", session =>
         {
             session.BoltTravel(new Point2(0, -1), EffectKind.Cross, 2);
             session.BoltTravel(new Point2(0, 1), EffectKind.Cross, 2);
             session.BoltTravel(new Point2(-1, 0), EffectKind.Cross, 2);
             session.BoltTravel(new Point2(1, 0), EffectKind.Cross, 2);
         }),
-        new("EX", session =>
+        new("ex", "EX", session =>
         {
             session.BoltTravel(new Point2(-1, -1), EffectKind.Bolt, 3);
             session.BoltTravel(new Point2(-1, 1), EffectKind.Bolt, 3);

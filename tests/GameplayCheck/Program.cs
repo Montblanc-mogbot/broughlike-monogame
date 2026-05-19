@@ -9,7 +9,8 @@ var checks = new List<(string name, Action run)>
     ("GameApp processes one movement per update", CheckSingleMovementPerUpdate),
     ("Tank alternates movement turns", CheckTankAlternates),
     ("Player can move into tile after killing eater", CheckMoveAfterKillingEater),
-    ("Stunned enemy does not retaliate same turn", CheckStunnedEnemyDoesNotRetaliate)
+    ("Stunned enemy does not retaliate same turn", CheckStunnedEnemyDoesNotRetaliate),
+    ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot)
 };
 
 foreach (var (name, run) in checks)
@@ -148,9 +149,37 @@ static void CheckStunnedEnemyDoesNotRetaliate()
     }
 }
 
+static void CheckUseItemConsumesSlot()
+{
+    var session = CreateSession();
+    var grid = CreateOpenFloorGrid(7);
+    SetProperty(session, nameof(GameSession.Grid), grid);
+
+    var player = new MonsterActor(MonsterCatalog.Player, grid.GetTile(3, 3), isPlayer: true);
+    SetProperty(session, nameof(GameSession.Player), player);
+    SetProperty(session, nameof(GameSession.Mode), GameMode.Running);
+
+    var inventory = new Inventory();
+    inventory.AddSlot(ItemCatalog.CreateTutorialItems().First(item => item.Id == "power"));
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(session, inventory);
+
+    session.UseItem(0);
+
+    if (player.BonusAttack != 5)
+    {
+        throw new Exception($"power item did not apply bonus attack: {player.BonusAttack}");
+    }
+
+    if (inventory.GetItem(0) is not null)
+    {
+        throw new Exception("used item slot was not cleared");
+    }
+}
+
 static GameSession CreateSession()
 {
-    return new GameSession(new Random(0), new AudioService(), new ScoreboardService(new InMemoryScoreStorage()), SpellBook.Create());
+    return new GameSession(new Random(0), new AudioService(), new ScoreboardService(new InMemoryScoreStorage()), ItemCatalog.CreateTutorialItems());
 }
 
 static LevelGrid CreateOpenFloorGrid(int size)

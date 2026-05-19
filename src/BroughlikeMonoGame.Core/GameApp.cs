@@ -13,7 +13,7 @@ public sealed class GameApp
     public GameApp(GameAppDependencies dependencies, IScoreStorage? scoreStorage = null)
     {
         scoreStorage ??= new FileScoreStorage(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame", "scores.json"));
-        _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), SpellBook.Create());
+        _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), ItemCatalog.CreateTutorialItems());
         _session.ShowTitle();
         _renderer = new GameRenderer(dependencies.Font, dependencies.Pixel);
     }
@@ -67,7 +67,7 @@ public sealed class GameApp
             var key = Keys.D1 + i;
             if (input.IsNewKeyPress(key) || input.IsNewKeyPress(Keys.NumPad1 + i))
             {
-                _session.CastSpell(i);
+                _session.UseItem(i);
             }
         }
     }

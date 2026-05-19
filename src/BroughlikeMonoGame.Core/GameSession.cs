@@ -9,15 +9,15 @@ public sealed class GameSession
     private readonly Random _random;
     private readonly AudioService _audio;
     private readonly ScoreboardService _scoreboard;
-    private readonly List<SpellDefinition> _spellBook;
+    private readonly Dictionary<string, ItemDefinition> _itemCatalog;
     private readonly List<MonsterActor> _monsters = [];
 
-    public GameSession(Random random, AudioService audio, ScoreboardService scoreboard, IReadOnlyList<SpellDefinition> spellBook)
+    public GameSession(Random random, AudioService audio, ScoreboardService scoreboard, IReadOnlyList<ItemDefinition> itemCatalog)
     {
         _random = random;
         _audio = audio;
         _scoreboard = scoreboard;
-        _spellBook = spellBook.ToList();
+        _itemCatalog = itemCatalog.ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase);
         Scores = _scoreboard.Load();
         Mode = GameMode.Title;
         Grid = new LevelGrid(Layout.MapTiles);
@@ -33,7 +33,7 @@ public sealed class GameSession
 
     public List<ScoreEntry> Scores { get; private set; }
 
-    public List<string?> PlayerSpells { get; private set; } = [];
+    public Inventory Inventory { get; private set; } = new();
 
     public int Level { get; private set; } = 1;
 
@@ -43,7 +43,7 @@ public sealed class GameSession
 
     public int SpawnCounter { get; private set; }
 
-    public int NumSpells { get; private set; }
+    public int InventoryCapacity { get; private set; }
 
     public int ShakeAmount { get; private set; }
 
@@ -61,12 +61,12 @@ public sealed class GameSession
     {
         Level = 1;
         Score = 0;
-        NumSpells = GameConstants.InitialSpellCount;
+        InventoryCapacity = GameConstants.InitialSpellCount;
         StartLevel(GameConstants.StartingHp, null);
         Mode = GameMode.Running;
     }
 
-    public void StartLevel(float playerHp, List<string?>? spells)
+    public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds)
     {
         SpawnRate = GameConstants.InitialSpawnRate;
         SpawnCounter = SpawnRate;
@@ -74,7 +74,15 @@ public sealed class GameSession
         GenerateLevel();
         Player = new MonsterActor(MonsterCatalog.Player, Grid.GetRandomPassableTile(_random), isPlayer: true);
         Player.Heal(playerHp - Player.Hp);
-        PlayerSpells = spells is null ? DrawInitialSpells(NumSpells) : spells.ToList();
+        Inventory = new Inventory();
+        if (inventoryItemIds is null)
+        {
+            DrawInitialInventory(InventoryCapacity);
+        }
+        else
+        {
+            Inventory.LoadFromIds(inventoryItemIds, ResolveItemDefinition);
+        }
         PlaceExit();
     }
 
@@ -114,22 +122,14 @@ public sealed class GameSession
         }
     }
 
-    public void CastSpell(int index)
+    public void UseItem(int index)
     {
-        if (Mode != GameMode.Running || index < 0 || index >= PlayerSpells.Count)
+        if (Mode != GameMode.Running || !Inventory.TryConsume(index, out var item) || item is null)
         {
             return;
         }
 
-        var spellName = PlayerSpells[index];
-        if (spellName is null)
-        {
-            return;
-        }
-
-        PlayerSpells[index] = null;
-        var spell = _spellBook.First(definition => definition.Name == spellName);
-        spell.Cast(this);
+        item.Use(this);
         _audio.Play("spell");
         Tick();
     }
@@ -180,10 +180,10 @@ public sealed class GameSession
     public void GainTreasure()
     {
         Score++;
-        if (Score % 3 == 0 && NumSpells < GameConstants.MaxSpells)
+        if (Score % 3 == 0 && InventoryCapacity < GameConstants.MaxSpells)
         {
-            NumSpells++;
-            AddSpell();
+            InventoryCapacity++;
+            AddRandomItem();
         }
 
         _audio.Play("treasure");
@@ -293,10 +293,9 @@ public sealed class GameSession
         _audio.Play(monster.IsPlayer ? "hit1" : "hit2");
     }
 
-    public void AddSpell()
+    public void AddRandomItem()
     {
-        var newSpell = _spellBook[_random.Next(_spellBook.Count)].Name;
-        PlayerSpells.Add(newSpell);
+        Inventory.AddSlot(GetRandomItemDefinition());
     }
 
     private void GenerateLevel()
@@ -423,7 +422,7 @@ public sealed class GameSession
                 else
                 {
                     Level++;
-                    StartLevel(Math.Min(GameConstants.MaxHp, Player.Hp + 1), PlayerSpells);
+                    StartLevel(Math.Min(GameConstants.MaxHp, Player.Hp + 1), Inventory.ToItemIds());
                 }
                 break;
         }
@@ -444,16 +443,22 @@ public sealed class GameSession
         Grid.Replace(tile, TileKind.Exit);
     }
 
-    private List<string?> DrawInitialSpells(int count)
+    private void DrawInitialInventory(int count)
     {
-        var spells = _spellBook.Select(spell => spell.Name).OrderBy(_ => _random.Next()).Take(count).Cast<string?>().ToList();
-        while (spells.Count < count)
+        foreach (var item in _itemCatalog.Values.OrderBy(_ => _random.Next()).Take(count))
         {
-            spells.Add(null);
+            Inventory.AddSlot(item);
         }
 
-        return spells;
+        while (Inventory.SlotCount < count)
+        {
+            Inventory.AddSlot();
+        }
     }
+
+    private ItemDefinition GetRandomItemDefinition() => _itemCatalog.Values.ElementAt(_random.Next(_itemCatalog.Count));
+
+    private ItemDefinition ResolveItemDefinition(string itemId) => _itemCatalog[itemId];
 
     private void ScreenShake()
     {
