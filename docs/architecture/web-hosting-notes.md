@@ -3,15 +3,24 @@
 ## Goal
 Host a playable build on GitHub Pages.
 
-## Constraint
-Official MonoGame templates installed locally currently target desktop/mobile, not web. A GitHub Pages deployment therefore needs either:
+## Chosen runtime direction
+Use KNI's BlazorGL WebAssembly target as the browser-facing MonoGame-compatible host.
 
-1. a MonoGame-compatible WebAssembly target/fork, or
-2. a separate browser host layer that can run the shared game code.
+## Why
+- Static-site output fits GitHub Pages.
+- KNI keeps the game loop in C# and stays close to MonoGame/XNA APIs.
+- This is a more direct path than maintaining a separate JavaScript gameplay port.
 
-## Current candidate paths
-- MonoGame-Wasm / related WebAssembly forks
-- KNI browser/blazor-based hosting path
+## Repo status
+- Added `src/BroughlikeMonoGame.Web/` as an initial browser host scaffold.
+- Added score-storage abstraction so browser persistence can diverge from desktop file persistence.
+- Confirmed the needed package/tool pattern from live KNI example docs.
 
-## Practical next step
-Finish the desktop implementation first, keep gameplay code isolated from the host layer, then add a web-specific frontend once the exact runtime path is proven in this environment.
+## Remaining engineering task
+The current shared core still imports MonoGame framework types directly, which prevents clean reuse from the KNI web host without assembly conflicts. Finish the host/domain split before expecting a successful wasm publish.
+
+## GitHub Pages publish target
+Once the type split is complete:
+1. `dotnet publish src/BroughlikeMonoGame.Web/BroughlikeMonoGame.Web.csproj -c Release`
+2. Deploy `src/BroughlikeMonoGame.Web/bin/Release/net8.0/publish/wwwroot/`
+3. Ensure the site is served with `<base href="./" />` for project-page compatibility

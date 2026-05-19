@@ -12,6 +12,8 @@ MonoGame recreation of Jeremiah Reid's JavaScript broughlike tutorial, rebuilt w
 - `docs/tutorial/` — mirrored tutorial pages in markdown
 - `docs/architecture/` — implementation notes, hosting notes, and GitHub delivery status
 - `src/BroughlikeMonoGame.Desktop/` — MonoGame desktop implementation
+- `src/BroughlikeMonoGame.Core/` — shared gameplay/render code currently being separated for multi-host support
+- `src/BroughlikeMonoGame.Web/` — initial KNI/Blazor WebAssembly host scaffold for GitHub Pages
 
 ## GitHub delivery
 - GitHub Actions Pages workflow: `.github/workflows/pages.yml`

@@ -25,7 +25,7 @@ internal sealed class BrowserGameHost : Game
         Window.Title = "Broughlike MonoGame";
     }
 
-    public void Tick()
+    public new void Tick()
     {
         if (!_initialized)
         {

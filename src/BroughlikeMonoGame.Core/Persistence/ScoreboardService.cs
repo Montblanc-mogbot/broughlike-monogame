@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -8,33 +6,27 @@ namespace BroughlikeMonoGame.Core;
 
 public sealed class ScoreboardService
 {
-    private readonly string _path;
+    private readonly IScoreStorage _storage;
 
-    public ScoreboardService(string path)
+    public ScoreboardService(IScoreStorage storage)
     {
-        _path = path;
+        _storage = storage;
     }
 
     public List<ScoreEntry> Load()
     {
-        if (!File.Exists(_path))
+        if (!_storage.Exists())
         {
             return [];
         }
 
-        return JsonSerializer.Deserialize<List<ScoreEntry>>(File.ReadAllText(_path)) ?? [];
+        return JsonSerializer.Deserialize<List<ScoreEntry>>(_storage.ReadAllText() ?? "[]") ?? [];
     }
 
     public void Save(List<ScoreEntry> scores)
     {
-        var directory = Path.GetDirectoryName(_path);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
         var json = JsonSerializer.Serialize(scores, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_path, json);
+        _storage.WriteAllText(json);
     }
 
     public List<ScoreEntry> AddScore(List<ScoreEntry> scores, int score, bool won)

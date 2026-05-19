@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A05CCB39-1C4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroughlikeMonoGame.Desktop", "src\BroughlikeMonoGame.Desktop\BroughlikeMonoGame.Desktop.csproj", "{4D77659C-A233-47EE-B68F-798DB07DB324}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroughlikeMonoGame.Core", "src\BroughlikeMonoGame.Core\BroughlikeMonoGame.Core.csproj", "{0015DCBC-26FC-46C9-85AE-5918730A8CF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroughlikeMonoGame.Web", "src\BroughlikeMonoGame.Web\BroughlikeMonoGame.Web.csproj", "{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,18 @@ Global
 		{4D77659C-A233-47EE-B68F-798DB07DB324}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D77659C-A233-47EE-B68F-798DB07DB324}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D77659C-A233-47EE-B68F-798DB07DB324}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0015DCBC-26FC-46C9-85AE-5918730A8CF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0015DCBC-26FC-46C9-85AE-5918730A8CF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0015DCBC-26FC-46C9-85AE-5918730A8CF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0015DCBC-26FC-46C9-85AE-5918730A8CF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D77659C-A233-47EE-B68F-798DB07DB324} = {A05CCB39-1C4F-4950-AA48-9D9A2BA4C9BF}
+		{0015DCBC-26FC-46C9-85AE-5918730A8CF3} = {A05CCB39-1C4F-4950-AA48-9D9A2BA4C9BF}
+		{FCC85745-C5C1-41E6-B6A9-FF1BF6CA2D71} = {A05CCB39-1C4F-4950-AA48-9D9A2BA4C9BF}
 	EndGlobalSection
 EndGlobal
