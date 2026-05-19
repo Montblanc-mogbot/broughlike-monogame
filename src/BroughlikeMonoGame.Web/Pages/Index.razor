@@ -1,0 +1,10 @@
+@page "/"
+@page "/index.html"
+@page "/{*path:nonfile}"
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Broughlike MonoGame</PageTitle>
+
+<div id="canvasHolder" style="background:#361c5c;position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;">
+    <canvas id="theCanvas" style="touch-action:none;display:block;width:100%;height:100%;"></canvas>
+</div>
