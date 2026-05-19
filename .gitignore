@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.ncb
+*.opendb
+*.VC.db
+*.swp
+*.DS_Store
+src/BroughlikeMonoGame.Desktop/bin/
+src/BroughlikeMonoGame.Desktop/obj/
