@@ -81,7 +81,10 @@ public sealed class GameSession
 
     public void AdvanceFrame()
     {
-        Player.TickAnimation();
+        if (Player is not null)
+        {
+            Player.TickAnimation();
+        }
 
         foreach (var monster in _monsters)
         {
