@@ -66,11 +66,16 @@
             window.theInstance = instance;
             const canvas = document.getElementById('theCanvas');
             canvas.addEventListener('contextmenu', e => e.preventDefault());
+            canvas.setAttribute('tabindex', '0');
+            canvas.focus();
             window.requestAnimationFrame(tickJS);
         };
 
         window.addEventListener('keydown', function(event) {
             if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) event.preventDefault();
+            if (window.theInstance) {
+                window.theInstance.invokeMethod('QueueKeyDotNet', event.key);
+            }
         });
         window.addEventListener('wheel', function(event) {
             event.preventDefault();
