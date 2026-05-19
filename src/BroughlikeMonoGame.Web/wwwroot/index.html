@@ -61,6 +61,7 @@
         const browserInputDebug = {
             keydown: 'none',
             keyup: 'none',
+            queued: 'none',
             focus: 'unknown',
             active: 'unknown'
         };
@@ -68,7 +69,7 @@
         function renderBrowserDebug() {
             const el = document.getElementById('browserDebug');
             if (!el) return;
-            el.textContent = `browser keydown=${browserInputDebug.keydown}\nkeyup=${browserInputDebug.keyup}\nfocus=${browserInputDebug.focus}\nactive=${browserInputDebug.active}`;
+            el.textContent = `browser keydown=${browserInputDebug.keydown}\nkeyup=${browserInputDebug.keyup}\nqueued=${browserInputDebug.queued}\nfocus=${browserInputDebug.focus}\nactive=${browserInputDebug.active}`;
         }
 
         function updateActiveElement() {
@@ -106,6 +107,10 @@
 
         window.addEventListener('keydown', function(event) {
             browserInputDebug.keydown = event.key;
+            if (window.theInstance) {
+                window.theInstance.invokeMethod('QueueKeyDotNet', event.key);
+                browserInputDebug.queued = event.key;
+            }
             updateActiveElement();
             if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) event.preventDefault();
         });

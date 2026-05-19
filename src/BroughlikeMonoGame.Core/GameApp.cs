@@ -82,6 +82,8 @@ public sealed class GameApp
 
     public void Draw(SpriteBatch spriteBatch, Viewport viewport) => _renderer.Draw(spriteBatch, _session, viewport);
 
+    public void RecordExternalInputDebug(string message) => _session.RecordRawInputDebug(message);
+
     private static bool AnyActionPressed(InputSnapshot input)
         => input.IsNewKeyPress(Keys.W)
            || input.IsNewKeyPress(Keys.A)
