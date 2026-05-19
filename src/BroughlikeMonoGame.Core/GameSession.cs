@@ -323,19 +323,20 @@ public sealed class GameSession
         }
         else if (actor.IsPlayer != newTile.Occupant.IsPlayer)
         {
+            var defender = newTile.Occupant;
             actor.AttackedThisTurn = true;
             actor.StartAttackLunge(delta);
-            newTile.Occupant.SetStunned(true);
-            DamageMonster(newTile.Occupant, 1 + actor.BonusAttack, delta);
-            BannerMessage = DescribeAttack(actor, newTile.Occupant);
+            defender.SetStunned(true);
+            DamageMonster(defender, 1 + actor.BonusAttack, delta);
+            BannerMessage = DescribeAttack(actor, defender);
             actor.BonusAttack = 0;
             QueueShake(5);
 
             if (actor.IsPlayer)
             {
-                LastPlayerActionDebug = $"attack {newTile.Occupant.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, newTile.Occupant.Hp):0.#}";
+                LastPlayerActionDebug = $"attack {defender.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, defender.Hp):0.#}";
             }
-            else if (newTile.Occupant.IsPlayer)
+            else if (defender.IsPlayer)
             {
                 LastEnemyActionDebug = $"hit by {actor.Archetype.Name} from ({actor.Tile.Position.X},{actor.Tile.Position.Y})";
             }
