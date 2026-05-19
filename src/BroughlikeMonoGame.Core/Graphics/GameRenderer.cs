@@ -41,6 +41,7 @@ public sealed class GameRenderer
 
         DrawBoard(spriteBatch, session);
         DrawSidebar(spriteBatch, session);
+        DrawDebugOverlay(spriteBatch, session);
 
         if (session.Mode is GameMode.Dead)
         {
@@ -306,6 +307,19 @@ public sealed class GameRenderer
         for (var i = 0; i < debugLines.Count; i++)
         {
             DrawText(spriteBatch, debugLines[i], new Vector2(x, 340 + i * 22), Palette.UiMuted, 0.42f);
+        }
+    }
+
+    private void DrawDebugOverlay(SpriteBatch spriteBatch, GameSession session)
+    {
+        var debugLines = session.GetDebugLines();
+        var boxHeight = 16 + debugLines.Count * 18;
+        var box = new Rectangle(12, 12, 420, boxHeight);
+        spriteBatch.Draw(_pixel, box, Color.Black * 0.72f);
+
+        for (var i = 0; i < debugLines.Count; i++)
+        {
+            DrawText(spriteBatch, debugLines[i], new Vector2(22, 20 + i * 18), Palette.UiPrimary, 0.4f);
         }
     }
 
