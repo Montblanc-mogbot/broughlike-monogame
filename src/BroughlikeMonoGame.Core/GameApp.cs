@@ -39,10 +39,16 @@ public sealed class GameApp
             return;
         }
 
-        if (input.IsNewKeyPress(Keys.W) || input.IsNewKeyPress(Keys.Up)) _session.TryMovePlayer(new Point2(0, -1));
-        if (input.IsNewKeyPress(Keys.S) || input.IsNewKeyPress(Keys.Down)) _session.TryMovePlayer(new Point2(0, 1));
-        if (input.IsNewKeyPress(Keys.A) || input.IsNewKeyPress(Keys.Left)) _session.TryMovePlayer(new Point2(-1, 0));
-        if (input.IsNewKeyPress(Keys.D) || input.IsNewKeyPress(Keys.Right)) _session.TryMovePlayer(new Point2(1, 0));
+        Point2? move = null;
+        if (input.IsNewKeyPress(Keys.W) || input.IsNewKeyPress(Keys.Up)) move = new Point2(0, -1);
+        else if (input.IsNewKeyPress(Keys.S) || input.IsNewKeyPress(Keys.Down)) move = new Point2(0, 1);
+        else if (input.IsNewKeyPress(Keys.A) || input.IsNewKeyPress(Keys.Left)) move = new Point2(-1, 0);
+        else if (input.IsNewKeyPress(Keys.D) || input.IsNewKeyPress(Keys.Right)) move = new Point2(1, 0);
+
+        if (move is { } delta)
+        {
+            _session.TryMovePlayer(delta);
+        }
 
         for (var i = 0; i < 9; i++)
         {

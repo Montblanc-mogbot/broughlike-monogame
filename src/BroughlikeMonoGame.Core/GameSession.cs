@@ -244,6 +244,11 @@ public sealed class GameSession
 
     public bool TryMoveActor(MonsterActor actor, Point2 delta)
     {
+        if (delta.X == 0 && delta.Y == 0)
+        {
+            return false;
+        }
+
         var newTile = Grid.GetTile(actor.Tile.Position.X + delta.X, actor.Tile.Position.Y + delta.Y);
         if (!newTile.Passable)
         {
@@ -263,6 +268,10 @@ public sealed class GameSession
             DamageMonster(newTile.Occupant, 1 + actor.BonusAttack);
             actor.BonusAttack = 0;
             QueueShake(5);
+        }
+        else
+        {
+            return false;
         }
 
         return true;

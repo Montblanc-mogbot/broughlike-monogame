@@ -8,6 +8,7 @@ namespace BroughlikeMonoGame.Core;
 
 public sealed class GameRenderer
 {
+    private const int TileInset = 3;
     private readonly SpriteFont _font;
     private readonly Texture2D _pixel;
 
@@ -78,18 +79,16 @@ public sealed class GameRenderer
         var shake = session.ShakeOffset;
         foreach (var tile in session.Grid.AllTiles())
         {
-            var rect = TileRect(tile.Position, shake);
-            spriteBatch.Draw(_pixel, rect, GetTileColor(tile));
+            DrawTile(spriteBatch, tile, shake);
 
             if (tile.HasTreasure)
             {
-                var treasureRect = Shrink(rect, 20);
-                spriteBatch.Draw(_pixel, treasureRect, Palette.Treasure);
+                DrawTreasure(spriteBatch, tile, shake);
             }
 
             if (tile.Effect is not null)
             {
-                spriteBatch.Draw(_pixel, Shrink(rect, 8), GetEffectColor(tile.Effect.Kind) * tile.Effect.Alpha);
+                DrawEffect(spriteBatch, tile, shake, tile.Effect);
             }
         }
 
@@ -99,6 +98,99 @@ public sealed class GameRenderer
         }
 
         DrawMonster(spriteBatch, session.Player, shake);
+    }
+
+    private void DrawTile(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = TileRect(tile.Position, shake);
+        spriteBatch.Draw(_pixel, rect, Palette.TileOutline);
+        var inner = Shrink(rect, TileInset);
+        spriteBatch.Draw(_pixel, inner, GetTileColor(tile));
+
+        switch (tile.Kind)
+        {
+            case TileKind.Floor:
+                DrawFloorDetails(spriteBatch, inner, tile.Position);
+                break;
+            case TileKind.Wall:
+                DrawWallDetails(spriteBatch, inner, tile.Position);
+                break;
+            case TileKind.Exit:
+                DrawExitDetails(spriteBatch, inner);
+                break;
+        }
+    }
+
+    private void DrawFloorDetails(SpriteBatch spriteBatch, Rectangle rect, Point2 point)
+    {
+        var size = 4;
+        var left = rect.X + 10 + (point.X % 2) * 6;
+        var top = rect.Y + 12 + (point.Y % 2) * 5;
+        spriteBatch.Draw(_pixel, new Rectangle(left, top, size, size), Palette.FloorSpeck);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Right - left + rect.X - size, rect.Bottom - top + rect.Y - size, size, size), Palette.FloorSpeck * 0.7f);
+    }
+
+    private void DrawWallDetails(SpriteBatch spriteBatch, Rectangle rect, Point2 point)
+    {
+        var brickHeight = 10;
+        for (var y = rect.Y + 8; y < rect.Bottom - 6; y += brickHeight)
+        {
+            var offset = ((y / brickHeight) + point.X) % 2 == 0 ? 0 : 10;
+            for (var x = rect.X + 6 - offset; x < rect.Right - 6; x += 20)
+            {
+                var width = Math.Min(16, rect.Right - 6 - x);
+                if (width > 6)
+                {
+                    spriteBatch.Draw(_pixel, new Rectangle(x, y, width, 2), Palette.WallMortar);
+                }
+            }
+        }
+    }
+
+    private void DrawExitDetails(SpriteBatch spriteBatch, Rectangle rect)
+    {
+        var centerX = rect.Center.X;
+        var centerY = rect.Center.Y;
+        spriteBatch.Draw(_pixel, new Rectangle(centerX - 4, rect.Y + 10, 8, rect.Height - 20), Palette.ExitGlow);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 10, centerY - 4, rect.Width - 20, 8), Palette.ExitGlow * 0.8f);
+        spriteBatch.Draw(_pixel, new Rectangle(centerX - 10, centerY - 10, 20, 20), Palette.ExitCore);
+    }
+
+    private void DrawTreasure(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 14);
+        spriteBatch.Draw(_pixel, rect, Palette.TreasureShadow);
+        spriteBatch.Draw(_pixel, Shrink(rect, 5), Palette.Treasure);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 3, rect.Y + 3, 6, rect.Height - 6), Palette.TreasureHighlight);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 3, rect.Center.Y - 3, rect.Width - 6, 6), Palette.TreasureHighlight * 0.85f);
+    }
+
+    private void DrawEffect(SpriteBatch spriteBatch, Tile tile, Point2 shake, TileEffect effect)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 6);
+        var color = GetEffectColor(effect.Kind) * effect.Alpha;
+
+        switch (effect.Kind)
+        {
+            case EffectKind.Heal:
+                spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 4, rect.Y + 8, 8, rect.Height - 16), color);
+                spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8, rect.Center.Y - 4, rect.Width - 16, 8), color);
+                break;
+            case EffectKind.Bolt:
+                for (var i = 0; i < 4; i++)
+                {
+                    spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8 + i * 10, rect.Y + 10 + (i % 2) * 8, 10, 6), color);
+                }
+                break;
+            case EffectKind.Cross:
+                spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 4, rect.Y + 4, 8, rect.Height - 8), color);
+                spriteBatch.Draw(_pixel, new Rectangle(rect.X + 4, rect.Center.Y - 4, rect.Width - 8, 8), color);
+                break;
+            case EffectKind.Dash:
+                spriteBatch.Draw(_pixel, new Rectangle(rect.X + 6, rect.Y + 12, rect.Width - 12, 6), color);
+                spriteBatch.Draw(_pixel, new Rectangle(rect.X + 12, rect.Bottom - 18, rect.Width - 24, 6), color * 0.8f);
+                break;
+        }
     }
 
     private void DrawMonster(SpriteBatch spriteBatch, MonsterActor actor, Point2 shake)
@@ -114,7 +206,11 @@ public sealed class GameRenderer
             color = Palette.UiAccent;
         }
 
-        spriteBatch.Draw(_pixel, bounds, color);
+        spriteBatch.Draw(_pixel, bounds, Palette.ActorShadow);
+        var body = Shrink(bounds, 4);
+        spriteBatch.Draw(_pixel, body, color);
+        DrawActorSilhouette(spriteBatch, actor, body);
+        DrawActorEyes(spriteBatch, actor, body);
 
         var hp = (int)MathF.Ceiling(actor.Hp);
         for (var i = 0; i < hp; i++)
@@ -122,6 +218,63 @@ public sealed class GameRenderer
             var heart = new Rectangle(bounds.X + (i % 3) * 10, bounds.Y - 10 - (i / 3) * 10, 8, 8);
             spriteBatch.Draw(_pixel, heart, Palette.DamageFlash);
         }
+    }
+
+    private void DrawActorSilhouette(SpriteBatch spriteBatch, MonsterActor actor, Rectangle body)
+    {
+        switch (actor.Kind)
+        {
+            case MonsterKind.Player:
+                DrawDiamond(spriteBatch, body, Palette.ActorFeaturePrimary);
+                spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 3, body.Y + 8, 6, body.Height - 16), Palette.ActorFeaturePrimary);
+                break;
+            case MonsterKind.Bird:
+                spriteBatch.Draw(_pixel, new Rectangle(body.X + 6, body.Center.Y - 4, body.Width - 12, 8), Palette.ActorFeaturePrimary);
+                spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 4, body.Y + 8, 8, body.Height - 16), Palette.ActorFeatureSecondary);
+                break;
+            case MonsterKind.Snake:
+                for (var i = 0; i < 3; i++)
+                {
+                    spriteBatch.Draw(_pixel, new Rectangle(body.X + 8 + i * 8, body.Y + 10 + (i % 2) * 6, 10, 6), Palette.ActorFeaturePrimary);
+                }
+                break;
+            case MonsterKind.Tank:
+                spriteBatch.Draw(_pixel, new Rectangle(body.X + 6, body.Y + 6, body.Width - 12, body.Height - 12), Palette.ActorFeaturePrimary);
+                spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 3, body.Y - 2, 6, 16), Palette.ActorFeatureSecondary);
+                break;
+            case MonsterKind.Eater:
+                spriteBatch.Draw(_pixel, new Rectangle(body.X + 6, body.Center.Y - 10, body.Width - 12, 20), Palette.ActorFeaturePrimary);
+                spriteBatch.Draw(_pixel, new Rectangle(body.X + 10, body.Center.Y - 4, body.Width - 20, 8), Palette.ActorShadow);
+                break;
+            case MonsterKind.Jester:
+                spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 4, body.Y + 6, 8, body.Height - 12), Palette.ActorFeaturePrimary);
+                spriteBatch.Draw(_pixel, new Rectangle(body.X + 8, body.Center.Y - 4, body.Width - 16, 8), Palette.ActorFeatureSecondary);
+                DrawDiamond(spriteBatch, new Rectangle(body.X + 8, body.Y + 8, 12, 12), Palette.ActorFeaturePrimary);
+                DrawDiamond(spriteBatch, new Rectangle(body.Right - 20, body.Y + 8, 12, 12), Palette.ActorFeaturePrimary);
+                break;
+        }
+    }
+
+    private void DrawActorEyes(SpriteBatch spriteBatch, MonsterActor actor, Rectangle body)
+    {
+        var eyeColor = actor.IsPlayer ? Palette.ActorEyeBright : Palette.ActorEye;
+        spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 10, body.Center.Y - 6, 6, 6), eyeColor);
+        spriteBatch.Draw(_pixel, new Rectangle(body.Center.X + 4, body.Center.Y - 6, 6, 6), eyeColor);
+    }
+
+    private void DrawDiamond(SpriteBatch spriteBatch, Rectangle area, Color color)
+    {
+        var halfWidth = Math.Max(2, area.Width / 2);
+        var centerX = area.Center.X;
+        var centerY = area.Center.Y;
+        for (var row = 0; row < area.Height; row++)
+        {
+            var distance = Math.Abs(row - area.Height / 2f) / (area.Height / 2f);
+            var width = Math.Max(2, (int)Math.Round((1f - distance) * halfWidth));
+            spriteBatch.Draw(_pixel, new Rectangle(centerX - width / 2, area.Y + row, width, 1), color);
+        }
+
+        spriteBatch.Draw(_pixel, new Rectangle(centerX - 1, centerY - 1, 2, 2), color);
     }
 
     private void DrawSidebar(SpriteBatch spriteBatch, GameSession session)
