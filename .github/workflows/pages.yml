@@ -26,48 +26,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore BroughlikeMonoGame.sln
+      - name: Restore web host
+        run: dotnet restore src/BroughlikeMonoGame.Web/BroughlikeMonoGame.Web.csproj
 
-      - name: Build desktop host
-        run: dotnet build BroughlikeMonoGame.sln --configuration Release --no-restore
-
-      - name: Prepare Pages artifact
-        run: |
-          mkdir -p public
-          cp README.md public/index.md
-          cp docs/architecture/web-build-path.md public/web-build-path.md
-          cp docs/architecture/web-hosting-notes.md public/web-hosting-notes.md
-          cat > public/index.html <<'HTML'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>Broughlike MonoGame</title>
-              <style>
-                body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 860px; line-height: 1.5; }
-                code { background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 4px; }
-              </style>
-            </head>
-            <body>
-              <h1>Broughlike MonoGame</h1>
-              <p>This repository is wired for GitHub Pages, but the playable browser build is not available yet.</p>
-              <p>Current status: the MonoGame DesktopGL project builds successfully in CI, and the documented browser-hosting path is published here until a WebAssembly-capable host project is added.</p>
-              <ul>
-                <li><a href="https://github.com/${{ github.repository }}">Repository</a></li>
-                <li><a href="web-build-path.md">Web build path notes</a></li>
-                <li><a href="web-hosting-notes.md">Web hosting notes</a></li>
-              </ul>
-              <p>Remaining dependency: add a browser-capable MonoGame/WebAssembly host project that outputs static files for Pages deployment.</p>
-            </body>
-          </html>
-          HTML
+      - name: Publish web build
+        run: dotnet publish src/BroughlikeMonoGame.Web/BroughlikeMonoGame.Web.csproj -c Release
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: src/BroughlikeMonoGame.Web/bin/Release/net8.0-browser/publish/wwwroot
 
   deploy:
     environment:
