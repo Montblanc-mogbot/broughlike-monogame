@@ -56,7 +56,9 @@ public sealed class GameSession
 
     public string LastRawInputDebug { get; private set; } = "curr=none prev=none";
 
-    public string LastActionDebug { get; private set; } = "boot";
+    public string LastPlayerActionDebug { get; private set; } = "boot";
+
+    public string LastEnemyActionDebug { get; private set; } = "none";
 
     public void ShowTitle()
     {
@@ -112,7 +114,7 @@ public sealed class GameSession
     {
         if (Mode != GameMode.Running)
         {
-            LastActionDebug = "ignored: mode not running";
+            LastPlayerActionDebug = "ignored: mode not running";
             return;
         }
 
@@ -189,7 +191,8 @@ public sealed class GameSession
             return [
                 $"Input: {LastInputDebug}",
                 $"Raw: {LastRawInputDebug}",
-                $"Action: {LastActionDebug}",
+                $"PlayerAction: {LastPlayerActionDebug}",
+                $"EnemyAction: {LastEnemyActionDebug}",
                 "Player: not spawned"
             ];
         }
@@ -198,7 +201,8 @@ public sealed class GameSession
         {
             $"Input: {LastInputDebug}",
             $"Raw: {LastRawInputDebug}",
-            $"Action: {LastActionDebug}",
+            $"PlayerAction: {LastPlayerActionDebug}",
+            $"EnemyAction: {LastEnemyActionDebug}",
             $"Player: ({Player.Tile.Position.X},{Player.Tile.Position.Y}) HP {MathF.Ceiling(Player.Hp)} L({Player.LastMove.X},{Player.LastMove.Y})"
         };
 
@@ -292,7 +296,7 @@ public sealed class GameSession
         {
             if (actor.IsPlayer)
             {
-                LastActionDebug = "rejected: zero delta";
+                LastPlayerActionDebug = "rejected: zero delta";
             }
             return false;
         }
@@ -302,7 +306,7 @@ public sealed class GameSession
         {
             if (actor.IsPlayer)
             {
-                LastActionDebug = $"blocked: wall at ({newTile.Position.X},{newTile.Position.Y})";
+                LastPlayerActionDebug = $"blocked: wall at ({newTile.Position.X},{newTile.Position.Y})";
             }
             return false;
         }
@@ -314,7 +318,7 @@ public sealed class GameSession
             ResolveStepOn(actor);
             if (actor.IsPlayer)
             {
-                LastActionDebug = $"move -> ({newTile.Position.X},{newTile.Position.Y})";
+                LastPlayerActionDebug = $"move -> ({newTile.Position.X},{newTile.Position.Y})";
             }
         }
         else if (actor.IsPlayer != newTile.Occupant.IsPlayer)
@@ -329,18 +333,18 @@ public sealed class GameSession
 
             if (actor.IsPlayer)
             {
-                LastActionDebug = $"attack {newTile.Occupant.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, newTile.Occupant.Hp):0.#}";
+                LastPlayerActionDebug = $"attack {newTile.Occupant.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, newTile.Occupant.Hp):0.#}";
             }
             else if (newTile.Occupant.IsPlayer)
             {
-                LastActionDebug = $"hit by {actor.Archetype.Name} from ({actor.Tile.Position.X},{actor.Tile.Position.Y})";
+                LastEnemyActionDebug = $"hit by {actor.Archetype.Name} from ({actor.Tile.Position.X},{actor.Tile.Position.Y})";
             }
         }
         else
         {
             if (actor.IsPlayer)
             {
-                LastActionDebug = $"blocked: ally at ({newTile.Position.X},{newTile.Position.Y})";
+                LastPlayerActionDebug = $"blocked: ally at ({newTile.Position.X},{newTile.Position.Y})";
             }
             return false;
         }

@@ -8,7 +8,6 @@
     <link href="BroughlikeMonoGame.Web.styles.css" rel="stylesheet" />
 </head>
 <body>
-    <div id="browserDebug" style="position:fixed;top:8px;left:8px;z-index:9999;padding:6px 8px;background:rgba(0,0,0,0.75);color:#fff;font:12px monospace;white-space:pre;pointer-events:none;">browser: init</div>
     <div id="app">
         <div style="display:grid;place-items:center;width:100vw;height:100vh;background:#361c5c;color:#fff;font-family:system-ui,sans-serif;">
             Loading Broughlike MonoGame…
@@ -58,28 +57,7 @@
     <script src="_content/nkast.Wasm.Audio/js/Audio.8.0.11.js"></script>
 
     <script>
-        const browserInputDebug = {
-            keydown: 'none',
-            keyup: 'none',
-            queued: 'none',
-            focus: 'unknown',
-            active: 'unknown'
-        };
-
-        function renderBrowserDebug() {
-            const el = document.getElementById('browserDebug');
-            if (!el) return;
-            el.textContent = `browser keydown=${browserInputDebug.keydown}\nkeyup=${browserInputDebug.keyup}\nqueued=${browserInputDebug.queued}\nfocus=${browserInputDebug.focus}\nactive=${browserInputDebug.active}`;
-        }
-
-        function updateActiveElement() {
-            const active = document.activeElement;
-            browserInputDebug.active = active ? `${active.tagName.toLowerCase()}#${active.id || '(no-id)'}` : 'none';
-            renderBrowserDebug();
-        }
-
         function tickJS() {
-            updateActiveElement();
             window.theInstance.invokeMethod('TickDotNet');
             window.requestAnimationFrame(tickJS);
         }
@@ -90,41 +68,19 @@
             canvas.addEventListener('contextmenu', e => e.preventDefault());
             canvas.setAttribute('tabindex', '0');
             canvas.focus();
-            browserInputDebug.focus = 'focused';
-            updateActiveElement();
             window.requestAnimationFrame(tickJS);
         };
 
-        window.addEventListener('focus', function() {
-            browserInputDebug.focus = 'focused';
-            updateActiveElement();
-        });
-
-        window.addEventListener('blur', function() {
-            browserInputDebug.focus = 'blurred';
-            updateActiveElement();
-        });
-
         window.addEventListener('keydown', function(event) {
-            browserInputDebug.keydown = event.key;
             if (window.theInstance) {
                 window.theInstance.invokeMethod('QueueKeyDotNet', event.key);
-                browserInputDebug.queued = event.key;
             }
-            updateActiveElement();
             if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) event.preventDefault();
-        });
-
-        window.addEventListener('keyup', function(event) {
-            browserInputDebug.keyup = event.key;
-            updateActiveElement();
         });
 
         window.addEventListener('wheel', function(event) {
             event.preventDefault();
         }, { passive: false });
-
-        renderBrowserDebug();
     </script>
 </body>
 </html>
