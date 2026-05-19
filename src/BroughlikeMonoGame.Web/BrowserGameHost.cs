@@ -19,7 +19,7 @@ internal sealed class BrowserGameHost : Game
     public BrowserGameHost()
     {
         _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
+        Content.RootDirectory = string.Empty;
         IsMouseVisible = true;
         Window.AllowUserResizing = false;
         Window.Title = "Broughlike MonoGame";

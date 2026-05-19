@@ -26,4 +26,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.17" PrivateAssets="all" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4.1" />
   </ItemGroup>
+
+  <Target Name="CopyGameContentIntoWwwroot" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)wwwroot/Fonts" />
+    <Copy SourceFiles="$(PublishDir)Fonts/UiFont.xnb" DestinationFiles="$(PublishDir)wwwroot/Fonts/UiFont.xnb" SkipUnchangedFiles="true" Condition="Exists('$(PublishDir)Fonts/UiFont.xnb')" />
+  </Target>
 </Project>
