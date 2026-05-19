@@ -52,6 +52,10 @@ public sealed class GameSession
 
     public string? BannerMessage { get; private set; }
 
+    public string LastInputDebug { get; private set; } = "none";
+
+    public string LastActionDebug { get; private set; } = "boot";
+
     public void ShowTitle()
     {
         Mode = GameMode.Title;
@@ -106,6 +110,7 @@ public sealed class GameSession
     {
         if (Mode != GameMode.Running)
         {
+            LastActionDebug = "ignored: mode not running";
             return;
         }
 
@@ -170,6 +175,37 @@ public sealed class GameSession
     }
 
     public void StartNextTurnMessage(string? message) => BannerMessage = message;
+
+    public void RecordInputDebug(string message) => LastInputDebug = message;
+
+    public IReadOnlyList<string> GetDebugLines()
+    {
+        if (Player is null)
+        {
+            return [
+                $"Input: {LastInputDebug}",
+                $"Action: {LastActionDebug}",
+                "Player: not spawned"
+            ];
+        }
+
+        var lines = new List<string>
+        {
+            $"Input: {LastInputDebug}",
+            $"Action: {LastActionDebug}",
+            $"Player: ({Player.Tile.Position.X},{Player.Tile.Position.Y}) HP {MathF.Ceiling(Player.Hp)} L({Player.LastMove.X},{Player.LastMove.Y})"
+        };
+
+        foreach (var enemy in _monsters
+                     .Where(monster => !monster.Dead)
+                     .OrderBy(monster => monster.Tile.DistanceTo(Player.Tile))
+                     .Take(3))
+        {
+            lines.Add($"{enemy.Archetype.Name}: ({enemy.Tile.Position.X},{enemy.Tile.Position.Y}) HP {MathF.Ceiling(enemy.Hp)} {(enemy.Stunned ? "stun" : "live")}");
+        }
+
+        return lines;
+    }
 
     public void WinRun()
     {
@@ -248,12 +284,20 @@ public sealed class GameSession
     {
         if (delta.X == 0 && delta.Y == 0)
         {
+            if (actor.IsPlayer)
+            {
+                LastActionDebug = "rejected: zero delta";
+            }
             return false;
         }
 
         var newTile = Grid.GetTile(actor.Tile.Position.X + delta.X, actor.Tile.Position.Y + delta.Y);
         if (!newTile.Passable)
         {
+            if (actor.IsPlayer)
+            {
+                LastActionDebug = $"blocked: wall at ({newTile.Position.X},{newTile.Position.Y})";
+            }
             return false;
         }
 
@@ -262,6 +306,10 @@ public sealed class GameSession
         {
             actor.MoveTo(newTile);
             ResolveStepOn(actor);
+            if (actor.IsPlayer)
+            {
+                LastActionDebug = $"move -> ({newTile.Position.X},{newTile.Position.Y})";
+            }
         }
         else if (actor.IsPlayer != newTile.Occupant.IsPlayer)
         {
@@ -272,9 +320,22 @@ public sealed class GameSession
             BannerMessage = DescribeAttack(actor, newTile.Occupant);
             actor.BonusAttack = 0;
             QueueShake(5);
+
+            if (actor.IsPlayer)
+            {
+                LastActionDebug = $"attack {newTile.Occupant.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, newTile.Occupant.Hp):0.#}";
+            }
+            else if (newTile.Occupant.IsPlayer)
+            {
+                LastActionDebug = $"hit by {actor.Archetype.Name} from ({actor.Tile.Position.X},{actor.Tile.Position.Y})";
+            }
         }
         else
         {
+            if (actor.IsPlayer)
+            {
+                LastActionDebug = $"blocked: ally at ({newTile.Position.X},{newTile.Position.Y})";
+            }
             return false;
         }
 

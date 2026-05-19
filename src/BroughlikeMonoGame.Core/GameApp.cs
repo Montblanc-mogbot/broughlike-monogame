@@ -40,13 +40,31 @@ public sealed class GameApp
         }
 
         Point2? move = null;
-        if (input.IsNewKeyPress(Keys.W) || input.IsNewKeyPress(Keys.Up)) move = new Point2(0, -1);
-        else if (input.IsNewKeyPress(Keys.S) || input.IsNewKeyPress(Keys.Down)) move = new Point2(0, 1);
-        else if (input.IsNewKeyPress(Keys.A) || input.IsNewKeyPress(Keys.Left)) move = new Point2(-1, 0);
-        else if (input.IsNewKeyPress(Keys.D) || input.IsNewKeyPress(Keys.Right)) move = new Point2(1, 0);
+        var inputDebug = "none";
+        if (input.IsNewKeyPress(Keys.W) || input.IsNewKeyPress(Keys.Up))
+        {
+            move = new Point2(0, -1);
+            inputDebug = "move up";
+        }
+        else if (input.IsNewKeyPress(Keys.S) || input.IsNewKeyPress(Keys.Down))
+        {
+            move = new Point2(0, 1);
+            inputDebug = "move down";
+        }
+        else if (input.IsNewKeyPress(Keys.A) || input.IsNewKeyPress(Keys.Left))
+        {
+            move = new Point2(-1, 0);
+            inputDebug = "move left";
+        }
+        else if (input.IsNewKeyPress(Keys.D) || input.IsNewKeyPress(Keys.Right))
+        {
+            move = new Point2(1, 0);
+            inputDebug = "move right";
+        }
 
         if (move is { } delta)
         {
+            _session.RecordInputDebug(inputDebug);
             _session.TryMovePlayer(delta);
         }
 
@@ -55,6 +73,7 @@ public sealed class GameApp
             var key = Keys.D1 + i;
             if (input.IsNewKeyPress(key) || input.IsNewKeyPress(Keys.NumPad1 + i))
             {
+                _session.RecordInputDebug($"spell {i + 1}");
                 _session.CastSpell(i);
             }
         }

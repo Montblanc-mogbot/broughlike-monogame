@@ -301,6 +301,12 @@ public sealed class GameRenderer
         {
             DrawText(spriteBatch, session.BannerMessage, new Vector2(x, Layout.ScreenHeight - 80), Palette.UiMuted, 0.5f);
         }
+
+        var debugLines = session.GetDebugLines();
+        for (var i = 0; i < debugLines.Count; i++)
+        {
+            DrawText(spriteBatch, debugLines[i], new Vector2(x, 340 + i * 22), Palette.UiMuted, 0.42f);
+        }
     }
 
     private void DrawOverlay(SpriteBatch spriteBatch, string title)
