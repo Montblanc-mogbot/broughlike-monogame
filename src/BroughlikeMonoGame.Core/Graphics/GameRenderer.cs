@@ -195,9 +195,10 @@ public sealed class GameRenderer
 
     private void DrawMonster(SpriteBatch spriteBatch, MonsterActor actor, Point2 shake)
     {
+        var lungeOffset = GetLungeOffset(actor);
         var position = new Vector2(
-            (actor.Tile.Position.X + actor.OffsetX) * Layout.TileSize + shake.X,
-            (actor.Tile.Position.Y + actor.OffsetY) * Layout.TileSize + shake.Y);
+            (actor.Tile.Position.X + actor.OffsetX) * Layout.TileSize + shake.X + lungeOffset.X,
+            (actor.Tile.Position.Y + actor.OffsetY) * Layout.TileSize + shake.Y + lungeOffset.Y);
         var bounds = new Rectangle((int)position.X + 8, (int)position.Y + 8, Layout.TileSize - 16, Layout.TileSize - 16);
 
         var color = actor.Shield > 0 ? Palette.Shield : actor.Archetype.Color;
@@ -205,12 +206,18 @@ public sealed class GameRenderer
         {
             color = Palette.UiAccent;
         }
+        else if (actor.HurtFlashFrames > 0)
+        {
+            color = Color.Lerp(color, Palette.DamageFlash, 0.65f);
+        }
 
         spriteBatch.Draw(_pixel, bounds, Palette.ActorShadow);
         var body = Shrink(bounds, 4);
         spriteBatch.Draw(_pixel, body, color);
         DrawActorSilhouette(spriteBatch, actor, body);
         DrawActorEyes(spriteBatch, actor, body);
+        DrawDamageMarker(spriteBatch, actor, bounds);
+        DrawStunIndicator(spriteBatch, actor, bounds);
 
         var hp = (int)MathF.Ceiling(actor.Hp);
         for (var i = 0; i < hp; i++)
@@ -352,6 +359,59 @@ public sealed class GameRenderer
         EffectKind.Dash => Palette.EffectDash,
         _ => Palette.EffectHeal,
     };
+
+    private void DrawDamageMarker(SpriteBatch spriteBatch, MonsterActor actor, Rectangle bounds)
+    {
+        if (actor.DamageTakenThisTurn <= 0)
+        {
+            return;
+        }
+
+        var markerY = bounds.Y - 18 - Math.Max(0, 12 - actor.HurtFlashFrames);
+        var marker = new Rectangle(bounds.Center.X - 7, markerY, 14, 14);
+        spriteBatch.Draw(_pixel, marker, Palette.DamageFlash);
+        if (actor.LastDamageDirection != default)
+        {
+            var arrow = new Rectangle(
+                marker.Center.X - actor.LastDamageDirection.X * 6 - 2,
+                marker.Center.Y - actor.LastDamageDirection.Y * 6 - 2,
+                4,
+                4);
+            spriteBatch.Draw(_pixel, arrow, Palette.UiAccent);
+        }
+    }
+
+    private void DrawStunIndicator(SpriteBatch spriteBatch, MonsterActor actor, Rectangle bounds)
+    {
+        if (!actor.Stunned && actor.StunPulseFrames <= 0)
+        {
+            return;
+        }
+
+        var pulse = 2 + (actor.StunPulseFrames % 6) / 2;
+        var ring = new Rectangle(bounds.X - pulse, bounds.Y - pulse, bounds.Width + pulse * 2, bounds.Height + pulse * 2);
+        DrawFrame(spriteBatch, ring, Palette.UiAccent * 0.75f, 2);
+        spriteBatch.Draw(_pixel, new Rectangle(bounds.Center.X - 8, bounds.Y - 18, 16, 4), Palette.UiAccent);
+    }
+
+    private Vector2 GetLungeOffset(MonsterActor actor)
+    {
+        if (actor.AttackLungeFrames <= 0 || actor.AttackDirection == default)
+        {
+            return Vector2.Zero;
+        }
+
+        var strength = actor.AttackLungeFrames / 8f;
+        return new Vector2(actor.AttackDirection.X, actor.AttackDirection.Y) * (6f * strength);
+    }
+
+    private void DrawFrame(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
+    {
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
+    }
 
     private static string RightPad(params object[] values)
         => string.Concat(values.Select(value => value.ToString()?.PadRight(10) ?? string.Empty));

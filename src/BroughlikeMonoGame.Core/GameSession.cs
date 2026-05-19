@@ -84,11 +84,13 @@ public sealed class GameSession
         if (Player is not null)
         {
             Player.TickAnimation();
+            Player.ClearTurnFeedback();
         }
 
         foreach (var monster in _monsters)
         {
             monster.TickAnimation();
+            monster.ClearTurnFeedback();
         }
     }
 
@@ -264,8 +266,10 @@ public sealed class GameSession
         else if (actor.IsPlayer != newTile.Occupant.IsPlayer)
         {
             actor.AttackedThisTurn = true;
-            newTile.Occupant.Stunned = true;
-            DamageMonster(newTile.Occupant, 1 + actor.BonusAttack);
+            actor.StartAttackLunge(delta);
+            newTile.Occupant.SetStunned(true);
+            DamageMonster(newTile.Occupant, 1 + actor.BonusAttack, delta);
+            BannerMessage = DescribeAttack(actor, newTile.Occupant);
             actor.BonusAttack = 0;
             QueueShake(5);
         }
@@ -279,7 +283,12 @@ public sealed class GameSession
 
     public void DamageMonster(MonsterActor monster, float damage)
     {
-        monster.Damage(damage);
+        DamageMonster(monster, damage, default);
+    }
+
+    public void DamageMonster(MonsterActor monster, float damage, Point2 sourceDirection)
+    {
+        monster.Damage(damage, sourceDirection);
         _audio.Play(monster.IsPlayer ? "hit1" : "hit2");
     }
 
@@ -417,6 +426,15 @@ public sealed class GameSession
                 }
                 break;
         }
+    }
+
+    private string DescribeAttack(MonsterActor attacker, MonsterActor defender)
+    {
+        var attackerName = attacker.IsPlayer ? "You" : attacker.Kind.ToString();
+        var defenderName = defender.IsPlayer ? "you" : defender.Kind.ToString();
+        var stunned = defender.Stunned && !defender.Dead ? " stunned" : string.Empty;
+        var defeated = defender.Dead ? " down" : string.Empty;
+        return $"{attackerName} hit {defenderName}{stunned}{defeated}";
     }
 
     private void PlaceExit()
