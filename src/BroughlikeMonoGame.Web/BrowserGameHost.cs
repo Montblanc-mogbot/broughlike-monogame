@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using BroughlikeMonoGame.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -13,7 +12,7 @@ internal sealed class BrowserGameHost : Game
     private SpriteBatch? _spriteBatch;
     private Texture2D? _pixel;
     private SpriteFont? _font;
-    private readonly Queue<Keys> _pendingKeys = new();
+    private InputSnapshot _previousInput;
     private GameApp? _app;
     private bool _initialized;
 
@@ -37,11 +36,6 @@ internal sealed class BrowserGameHost : Game
         base.Tick();
     }
 
-    public void QueueBrowserKey(Keys key)
-    {
-        _pendingKeys.Enqueue(key);
-    }
-
     protected override void Initialize()
     {
         _graphics.PreferredBackBufferWidth = Layout.ScreenWidth;
@@ -61,11 +55,10 @@ internal sealed class BrowserGameHost : Game
 
     protected override void Update(GameTime gameTime)
     {
-        var snapshot = _pendingKeys.Count > 0
-            ? InputSnapshot.Create(new KeyboardState(_pendingKeys.Dequeue()), default)
-            : InputSnapshot.Create(default, default);
-
+        var keyboard = Keyboard.GetState();
+        var snapshot = InputSnapshot.Create(keyboard, _previousInput.KeyboardState);
         _app?.Update(snapshot);
+        _previousInput = snapshot;
         base.Update(gameTime);
     }
 
