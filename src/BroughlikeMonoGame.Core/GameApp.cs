@@ -20,6 +20,8 @@ public sealed class GameApp
 
     public void Update(InputSnapshot input)
     {
+        _session.AdvanceFrame();
+
         if (_session.Mode is GameMode.Title or GameMode.Dead)
         {
             if (AnyActionPressed(input))

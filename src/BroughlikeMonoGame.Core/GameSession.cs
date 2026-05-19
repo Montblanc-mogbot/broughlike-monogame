@@ -79,6 +79,16 @@ public sealed class GameSession
         PlaceExit();
     }
 
+    public void AdvanceFrame()
+    {
+        Player.TickAnimation();
+
+        foreach (var monster in _monsters)
+        {
+            monster.TickAnimation();
+        }
+    }
+
     public void UpdateEffects()
     {
         foreach (var tile in Grid.AllTiles())
@@ -252,7 +262,6 @@ public sealed class GameSession
             QueueShake(5);
         }
 
-        actor.TickAnimation();
         return true;
     }
 

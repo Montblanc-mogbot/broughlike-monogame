@@ -53,8 +53,8 @@ public sealed class MonsterActor
 
     public void TickAnimation()
     {
-        OffsetX -= MathF.Sign(OffsetX) * (1f / 8f);
-        OffsetY -= MathF.Sign(OffsetY) * (1f / 8f);
+        OffsetX = ApproachZero(OffsetX, 1f / 8f);
+        OffsetY = ApproachZero(OffsetY, 1f / 8f);
     }
 
     public void MoveTo(Tile tile)
@@ -65,9 +65,24 @@ public sealed class MonsterActor
             OffsetX = Tile.Position.X - tile.Position.X;
             OffsetY = Tile.Position.Y - tile.Position.Y;
         }
+        else
+        {
+            OffsetX = 0f;
+            OffsetY = 0f;
+        }
 
         Tile = tile;
         tile.Occupant = this;
+    }
+
+    private static float ApproachZero(float value, float step)
+    {
+        if (MathF.Abs(value) <= step)
+        {
+            return 0f;
+        }
+
+        return value - MathF.Sign(value) * step;
     }
 
     public void Damage(float amount)
