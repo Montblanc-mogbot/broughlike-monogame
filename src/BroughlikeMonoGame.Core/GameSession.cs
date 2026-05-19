@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace BroughlikeMonoGame.Core;
@@ -51,14 +50,6 @@ public sealed class GameSession
     public Point2 ShakeOffset { get; private set; }
 
     public string? BannerMessage { get; private set; }
-
-    public string LastInputDebug { get; private set; } = "none";
-
-    public string LastRawInputDebug { get; private set; } = "curr=none prev=none";
-
-    public string LastPlayerActionDebug { get; private set; } = "boot";
-
-    public string LastEnemyActionDebug { get; private set; } = "none";
 
     public void ShowTitle()
     {
@@ -114,7 +105,6 @@ public sealed class GameSession
     {
         if (Mode != GameMode.Running)
         {
-            LastPlayerActionDebug = "ignored: mode not running";
             return;
         }
 
@@ -179,43 +169,6 @@ public sealed class GameSession
     }
 
     public void StartNextTurnMessage(string? message) => BannerMessage = message;
-
-    public void RecordInputDebug(string message) => LastInputDebug = message;
-
-    public void RecordRawInputDebug(string message) => LastRawInputDebug = message;
-
-    public IReadOnlyList<string> GetDebugLines()
-    {
-        if (Player is null)
-        {
-            return [
-                $"Input: {LastInputDebug}",
-                $"Raw: {LastRawInputDebug}",
-                $"PlayerAction: {LastPlayerActionDebug}",
-                $"EnemyAction: {LastEnemyActionDebug}",
-                "Player: not spawned"
-            ];
-        }
-
-        var lines = new List<string>
-        {
-            $"Input: {LastInputDebug}",
-            $"Raw: {LastRawInputDebug}",
-            $"PlayerAction: {LastPlayerActionDebug}",
-            $"EnemyAction: {LastEnemyActionDebug}",
-            $"Player: ({Player.Tile.Position.X},{Player.Tile.Position.Y}) HP {MathF.Ceiling(Player.Hp)} L({Player.LastMove.X},{Player.LastMove.Y})"
-        };
-
-        foreach (var enemy in _monsters
-                     .Where(monster => !monster.Dead)
-                     .OrderBy(monster => monster.Tile.DistanceTo(Player.Tile))
-                     .Take(3))
-        {
-            lines.Add($"{enemy.Archetype.Name}: ({enemy.Tile.Position.X},{enemy.Tile.Position.Y}) HP {MathF.Ceiling(enemy.Hp)} {(enemy.Stunned ? "stun" : "live")}");
-        }
-
-        return lines;
-    }
 
     public void WinRun()
     {
@@ -294,20 +247,12 @@ public sealed class GameSession
     {
         if (delta.X == 0 && delta.Y == 0)
         {
-            if (actor.IsPlayer)
-            {
-                LastPlayerActionDebug = "rejected: zero delta";
-            }
             return false;
         }
 
         var newTile = Grid.GetTile(actor.Tile.Position.X + delta.X, actor.Tile.Position.Y + delta.Y);
         if (!newTile.Passable)
         {
-            if (actor.IsPlayer)
-            {
-                LastPlayerActionDebug = $"blocked: wall at ({newTile.Position.X},{newTile.Position.Y})";
-            }
             return false;
         }
 
@@ -316,10 +261,6 @@ public sealed class GameSession
         {
             actor.MoveTo(newTile);
             ResolveStepOn(actor);
-            if (actor.IsPlayer)
-            {
-                LastPlayerActionDebug = $"move -> ({newTile.Position.X},{newTile.Position.Y})";
-            }
         }
         else if (actor.IsPlayer != newTile.Occupant.IsPlayer)
         {
@@ -332,21 +273,9 @@ public sealed class GameSession
             actor.BonusAttack = 0;
             QueueShake(5);
 
-            if (actor.IsPlayer)
-            {
-                LastPlayerActionDebug = $"attack {defender.Archetype.Name} @({newTile.Position.X},{newTile.Position.Y}) hp {MathF.Max(0, defender.Hp):0.#}";
-            }
-            else if (defender.IsPlayer)
-            {
-                LastEnemyActionDebug = $"hit by {actor.Archetype.Name} from ({actor.Tile.Position.X},{actor.Tile.Position.Y})";
-            }
         }
         else
         {
-            if (actor.IsPlayer)
-            {
-                LastPlayerActionDebug = $"blocked: ally at ({newTile.Position.X},{newTile.Position.Y})";
-            }
             return false;
         }
 

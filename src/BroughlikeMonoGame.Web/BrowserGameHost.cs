@@ -14,13 +14,8 @@ internal sealed class BrowserGameHost : Game
     private Texture2D? _pixel;
     private SpriteFont? _font;
     private readonly Queue<Keys> _pendingKeys = new();
-    private InputSnapshot _previousInput;
     private GameApp? _app;
     private bool _initialized;
-    private string _lastQueuedKey = "none";
-    private string _lastDequeuedKey = "none";
-    private int _enqueuedCount;
-    private int _dequeuedCount;
 
     public BrowserGameHost()
     {
@@ -45,8 +40,6 @@ internal sealed class BrowserGameHost : Game
     public void QueueBrowserKey(Keys key)
     {
         _pendingKeys.Enqueue(key);
-        _lastQueuedKey = key.ToString();
-        _enqueuedCount++;
     }
 
     protected override void Initialize()
@@ -68,12 +61,10 @@ internal sealed class BrowserGameHost : Game
 
     protected override void Update(GameTime gameTime)
     {
-        Keys? dequeuedKey = null;
         InputSnapshot snapshot;
         if (_pendingKeys.Count > 0)
         {
             var key = _pendingKeys.Dequeue();
-            dequeuedKey = key;
             snapshot = InputSnapshot.Create(new KeyboardState([key]), default);
         }
         else
@@ -81,15 +72,7 @@ internal sealed class BrowserGameHost : Game
             snapshot = InputSnapshot.Create(default, default);
         }
 
-        if (dequeuedKey is { } consumedKey)
-        {
-            _lastDequeuedKey = consumedKey.ToString();
-            _dequeuedCount++;
-        }
-
         _app?.Update(snapshot);
-        _app?.RecordExternalInputDebug($"web enq={_enqueuedCount} deq={_dequeuedCount} lastIn={_lastQueuedKey} lastOut={_lastDequeuedKey} pending={_pendingKeys.Count}");
-        _previousInput = snapshot;
         base.Update(gameTime);
     }
 
