@@ -79,7 +79,7 @@ public sealed class LevelGrid
     public void Replace(Tile tile, TileKind kind)
     {
         tile.SetKind(kind);
-        tile.HasTreasure = false;
+        tile.WorldObject = null;
     }
 
     public int CountPassableConnectedFrom(Tile tile) => tile.GetConnectedPassableTiles(this).Count;

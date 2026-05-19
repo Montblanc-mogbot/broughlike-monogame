@@ -10,7 +10,9 @@ var checks = new List<(string name, Action run)>
     ("Tank alternates movement turns", CheckTankAlternates),
     ("Player can move into tile after killing eater", CheckMoveAfterKillingEater),
     ("Stunned enemy does not retaliate same turn", CheckStunnedEnemyDoesNotRetaliate),
-    ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot)
+    ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot),
+    ("Treasure threshold spawns pickup instead of granting item directly", CheckTreasureThresholdSpawnsPickup),
+    ("Player stepping on item pickup stores item", CheckItemPickupStoresItem)
 };
 
 foreach (var (name, run) in checks)
@@ -174,6 +176,79 @@ static void CheckUseItemConsumesSlot()
     if (inventory.GetItem(0) is not null)
     {
         throw new Exception("used item slot was not cleared");
+    }
+}
+
+static void CheckTreasureThresholdSpawnsPickup()
+{
+    var session = CreateSession();
+    var grid = CreateOpenFloorGrid(7);
+    SetProperty(session, nameof(GameSession.Grid), grid);
+
+    var player = new MonsterActor(MonsterCatalog.Player, grid.GetTile(3, 3), isPlayer: true);
+    SetProperty(session, nameof(GameSession.Player), player);
+    SetProperty(session, nameof(GameSession.Mode), GameMode.Running);
+    SetProperty(session, nameof(GameSession.Score), 2);
+    SetProperty(session, nameof(GameSession.InventoryCapacity), 1);
+
+    var inventory = new Inventory();
+    inventory.AddSlot();
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(session, inventory);
+
+    session.GainTreasure();
+
+    if (inventory.GetItem(0) is not null)
+    {
+        throw new Exception("treasure threshold granted an item directly instead of spawning a pickup");
+    }
+
+    if (inventory.SlotCount != 2)
+    {
+        throw new Exception($"inventory capacity slot was not added: {inventory.SlotCount}");
+    }
+
+    var spawnedPickupCount = grid.AllTiles().Count(tile => tile.WorldObject is ItemPickup);
+    if (spawnedPickupCount != 1)
+    {
+        throw new Exception($"expected exactly one spawned item pickup, found {spawnedPickupCount}");
+    }
+}
+
+static void CheckItemPickupStoresItem()
+{
+    var session = CreateSession();
+    var grid = CreateOpenFloorGrid(7);
+    SetProperty(session, nameof(GameSession.Grid), grid);
+
+    var player = new MonsterActor(MonsterCatalog.Player, grid.GetTile(3, 3), isPlayer: true);
+    SetProperty(session, nameof(GameSession.Player), player);
+    SetProperty(session, nameof(GameSession.Mode), GameMode.Running);
+    SetProperty(session, nameof(GameSession.InventoryCapacity), 1);
+
+    var inventory = new Inventory();
+    inventory.AddSlot();
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(session, inventory);
+
+    var item = ItemCatalog.CreateTutorialItems().First(definition => definition.Id == "power");
+    grid.GetTile(3, 2).WorldObject = new ItemPickup(item);
+
+    session.TryMovePlayer(new Point2(0, -1));
+
+    if (player.Tile.Position != new Point2(3, 2))
+    {
+        throw new Exception($"player did not move onto item tile: {player.Tile.Position}");
+    }
+
+    if (inventory.GetItem(0)?.Id != "power")
+    {
+        throw new Exception("item pickup was not stored in inventory");
+    }
+
+    if (grid.GetTile(3, 2).WorldObject is not null)
+    {
+        throw new Exception("item pickup was not consumed from the floor");
     }
 }
 

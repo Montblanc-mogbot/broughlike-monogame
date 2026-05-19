@@ -183,7 +183,8 @@ public sealed class GameSession
         if (Score % 3 == 0 && InventoryCapacity < GameConstants.MaxSpells)
         {
             InventoryCapacity++;
-            AddRandomItem();
+            Inventory.AddSlot();
+            SpawnItemPickup();
         }
 
         _audio.Play("treasure");
@@ -193,6 +194,10 @@ public sealed class GameSession
     public void QueueShake(int amount) => ShakeAmount = Math.Max(ShakeAmount, amount);
 
     public void PlaceEffect(Tile tile, EffectKind kind) => tile.SetEffect(kind);
+
+    public void PlaceWorldObject(Tile tile, WorldObject worldObject) => tile.WorldObject = worldObject;
+
+    public bool TryStoreInventoryItem(ItemDefinition item) => Inventory.TryStore(item, InventoryCapacity);
 
     public void DigAllWalls()
     {
@@ -207,7 +212,7 @@ public sealed class GameSession
         foreach (var tile in origin.GetAdjacentNeighbors(Grid).Where(tile => Grid.IsInBounds(tile.Position.X, tile.Position.Y) && tile.Kind == TileKind.Wall))
         {
             Grid.Replace(tile, TileKind.Floor);
-            tile.HasTreasure = true;
+            tile.WorldObject = new TreasurePickup();
         }
     }
 
@@ -295,7 +300,7 @@ public sealed class GameSession
 
     public void AddRandomItem()
     {
-        Inventory.AddSlot(GetRandomItemDefinition());
+        Inventory.TryStore(GetRandomItemDefinition(), InventoryCapacity);
     }
 
     private void GenerateLevel()
@@ -309,7 +314,7 @@ public sealed class GameSession
                 GenerateMonsters();
                 for (var i = 0; i < 3; i++)
                 {
-                    Grid.GetRandomPassableTile(_random).HasTreasure = true;
+                    SpawnTreasurePickup();
                 }
 
                 return;
@@ -407,12 +412,10 @@ public sealed class GameSession
     private void ResolveStepOn(MonsterActor actor)
     {
         var tile = actor.Tile;
+        tile.WorldObject?.Interact(this, actor, tile);
+
         switch (tile.Kind)
         {
-            case TileKind.Floor when actor.IsPlayer && tile.HasTreasure:
-                tile.HasTreasure = false;
-                GainTreasure();
-                break;
             case TileKind.Exit when actor.IsPlayer:
                 _audio.Play("newLevel");
                 if (Level == GameConstants.NumberOfLevels)
@@ -457,6 +460,19 @@ public sealed class GameSession
     }
 
     private ItemDefinition GetRandomItemDefinition() => _itemCatalog.Values.ElementAt(_random.Next(_itemCatalog.Count));
+
+    private void SpawnTreasurePickup()
+    {
+        var tile = Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null);
+        tile.WorldObject = new TreasurePickup();
+    }
+
+    private void SpawnItemPickup()
+    {
+        var tile = Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null);
+        tile.WorldObject = new ItemPickup(GetRandomItemDefinition());
+        BannerMessage = "An item appeared.";
+    }
 
     private ItemDefinition ResolveItemDefinition(string itemId) => _itemCatalog[itemId];
 

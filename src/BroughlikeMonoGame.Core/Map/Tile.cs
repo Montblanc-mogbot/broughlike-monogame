@@ -17,13 +17,20 @@ public sealed class Tile
 
     public bool Passable => Kind != TileKind.Wall;
 
-    public bool HasTreasure { get; set; }
-
     public TileEffect? Effect { get; private set; }
 
     public MonsterActor? Occupant { get; set; }
 
-    public void SetKind(TileKind kind) => Kind = kind;
+    public WorldObject? WorldObject { get; set; }
+
+    public void SetKind(TileKind kind)
+    {
+        Kind = kind;
+        if (kind == TileKind.Wall)
+        {
+            WorldObject = null;
+        }
+    }
 
     public int DistanceTo(Tile other) => System.Math.Abs(Position.X - other.Position.X) + System.Math.Abs(Position.Y - other.Position.Y);
 

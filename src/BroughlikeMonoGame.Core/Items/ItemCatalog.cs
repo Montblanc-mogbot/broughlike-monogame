@@ -81,7 +81,7 @@ public static class ItemCatalog
             foreach (var monster in session.GetEnemies())
             {
                 monster.Heal(1);
-                monster.Tile.HasTreasure = true;
+                session.PlaceWorldObject(monster.Tile, new TreasurePickup());
             }
         }),
         new("alchemy", "ALCHEMY", session => session.TransformAdjacentWallsToTreasure(session.Player.Tile)),

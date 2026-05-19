@@ -45,6 +45,26 @@ public sealed class Inventory
         return true;
     }
 
+    public bool TryStore(ItemDefinition item, int? maxSlots = null)
+    {
+        for (var i = 0; i < _slots.Count; i++)
+        {
+            if (_slots[i] is null)
+            {
+                _slots[i] = item;
+                return true;
+            }
+        }
+
+        if (maxSlots is null || _slots.Count < maxSlots.Value)
+        {
+            _slots.Add(item);
+            return true;
+        }
+
+        return false;
+    }
+
     public void CopyBackwardIntoEmptySlots()
     {
         for (var i = _slots.Count - 1; i > 0; i--)

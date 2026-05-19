@@ -81,9 +81,9 @@ public sealed class GameRenderer
         {
             DrawTile(spriteBatch, tile, shake);
 
-            if (tile.HasTreasure)
+            if (tile.WorldObject is not null)
             {
-                DrawTreasure(spriteBatch, tile, shake);
+                DrawWorldObject(spriteBatch, tile, shake, tile.WorldObject);
             }
 
             if (tile.Effect is not null)
@@ -156,13 +156,35 @@ public sealed class GameRenderer
         spriteBatch.Draw(_pixel, new Rectangle(centerX - 10, centerY - 10, 20, 20), Palette.ExitCore);
     }
 
-    private void DrawTreasure(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    private void DrawWorldObject(SpriteBatch spriteBatch, Tile tile, Point2 shake, WorldObject worldObject)
+    {
+        switch (worldObject.VisualKind)
+        {
+            case WorldObjectVisualKind.Treasure:
+                DrawTreasurePickup(spriteBatch, tile, shake);
+                break;
+            case WorldObjectVisualKind.Item:
+                DrawItemPickup(spriteBatch, tile, shake);
+                break;
+        }
+    }
+
+    private void DrawTreasurePickup(SpriteBatch spriteBatch, Tile tile, Point2 shake)
     {
         var rect = Shrink(TileRect(tile.Position, shake), 14);
         spriteBatch.Draw(_pixel, rect, Palette.TreasureShadow);
         spriteBatch.Draw(_pixel, Shrink(rect, 5), Palette.Treasure);
         spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 3, rect.Y + 3, 6, rect.Height - 6), Palette.TreasureHighlight);
         spriteBatch.Draw(_pixel, new Rectangle(rect.X + 3, rect.Center.Y - 3, rect.Width - 6, 6), Palette.TreasureHighlight * 0.85f);
+    }
+
+    private void DrawItemPickup(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 15);
+        spriteBatch.Draw(_pixel, rect, Palette.ActorShadow);
+        spriteBatch.Draw(_pixel, Shrink(rect, 4), Palette.UiAccent);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 3, rect.Y + 2, 6, rect.Height - 4), Palette.UiPrimary);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 2, rect.Center.Y - 3, rect.Width - 4, 6), Palette.UiPrimary * 0.9f);
     }
 
     private void DrawEffect(SpriteBatch spriteBatch, Tile tile, Point2 shake, TileEffect effect)
