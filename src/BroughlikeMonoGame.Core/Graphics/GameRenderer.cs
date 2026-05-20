@@ -364,18 +364,19 @@ public sealed class GameRenderer
     private void DrawSidebar(SpriteBatch spriteBatch, GameSession session)
     {
         var x = Layout.ScreenWidth - Layout.UiTilesWide * Layout.TileSize + 18;
-        DrawText(spriteBatch, session.CurrentDungeon.DisplayName, new Vector2(x, 30), Palette.UiPrimary, 0.72f);
-        DrawText(spriteBatch, session.CurrentFloorDisplayName, new Vector2(x, 60), Palette.UiMuted, 0.56f);
-        DrawText(spriteBatch, $"Score: {session.Score}", new Vector2(x, 95), Palette.UiPrimary, 0.8f);
-        DrawText(spriteBatch, $"HP: {MathF.Ceiling(session.Player.Hp)}/{GameConstants.MaxHp}", new Vector2(x, 130), Palette.UiMuted, 0.65f);
+        var width = Layout.UiTilesWide * Layout.TileSize - 36;
+        var nameBottom = DrawFittedTextBlock(spriteBatch, session.CurrentDungeon.DisplayName, new Vector2(x, 28), width, Palette.UiPrimary, 0.72f, 0.48f, 2, 8f);
+        var floorBottom = DrawFittedTextBlock(spriteBatch, session.CurrentFloorDisplayName, new Vector2(x, nameBottom + 4f), width, Palette.UiMuted, 0.58f, 0.44f, 2, 6f);
+        var statsY = floorBottom + 16f;
+        DrawText(spriteBatch, $"Score: {session.Score}", new Vector2(x, statsY), Palette.UiPrimary, 0.8f);
+        DrawText(spriteBatch, $"HP: {MathF.Ceiling(session.Player.Hp)}/{GameConstants.MaxHp}", new Vector2(x, statsY + 35f), Palette.UiMuted, 0.65f);
 
         for (var i = 0; i < session.Inventory.SlotCount; i++)
         {
             var item = session.Inventory.GetItem(i);
             var text = $"{i + 1}) {item?.DisplayName ?? string.Empty}";
-            DrawText(spriteBatch, text, new Vector2(x, 175 + i * 34), Palette.UiAccent, 0.62f);
+            DrawText(spriteBatch, text, new Vector2(x, statsY + 80f + i * 34), Palette.UiAccent, 0.62f);
         }
-
     }
 
     private void DrawMessageBox(SpriteBatch spriteBatch, string message)
@@ -396,6 +397,75 @@ public sealed class GameRenderer
 
     private void DrawText(SpriteBatch spriteBatch, string text, Vector2 position, Color color, float scale)
         => spriteBatch.DrawString(_font, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+
+    private float DrawFittedTextBlock(
+        SpriteBatch spriteBatch,
+        string text,
+        Vector2 position,
+        float maxWidth,
+        Color color,
+        float preferredScale,
+        float minimumScale,
+        int maxLines,
+        float lineGap)
+    {
+        var scale = preferredScale;
+        var lines = WrapText(text, maxWidth, scale);
+        while ((lines.Count > maxLines || lines.Any(line => _font.MeasureString(line).X * scale > maxWidth)) && scale > minimumScale)
+        {
+            scale -= 0.02f;
+            lines = WrapText(text, maxWidth, scale);
+        }
+
+        if (lines.Count > maxLines)
+        {
+            lines = lines.Take(maxLines).ToList();
+            var last = lines[^1];
+            while (last.Length > 0 && _font.MeasureString($"{last}…").X * scale > maxWidth)
+            {
+                last = last[..^1];
+            }
+
+            lines[^1] = $"{last.TrimEnd()}…";
+        }
+
+        var y = position.Y;
+        foreach (var line in lines)
+        {
+            DrawText(spriteBatch, line, new Vector2(position.X, y), color, scale);
+            y += _font.LineSpacing * scale + lineGap;
+        }
+
+        return y;
+    }
+
+    private List<string> WrapText(string text, float maxWidth, float scale)
+    {
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0)
+        {
+            return [string.Empty];
+        }
+
+        var lines = new List<string>();
+        var current = words[0];
+        for (var i = 1; i < words.Length; i++)
+        {
+            var candidate = $"{current} {words[i]}";
+            if (_font.MeasureString(candidate).X * scale <= maxWidth)
+            {
+                current = candidate;
+            }
+            else
+            {
+                lines.Add(current);
+                current = words[i];
+            }
+        }
+
+        lines.Add(current);
+        return lines;
+    }
 
     private void DrawTextCentered(SpriteBatch spriteBatch, string text, int y, Color color, float scale)
     {
