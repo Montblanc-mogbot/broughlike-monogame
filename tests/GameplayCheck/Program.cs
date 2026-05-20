@@ -12,7 +12,8 @@ var checks = new List<(string name, Action run)>
     ("Stunned enemy does not retaliate same turn", CheckStunnedEnemyDoesNotRetaliate),
     ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot),
     ("Treasure threshold spawns pickup instead of granting item directly", CheckTreasureThresholdSpawnsPickup),
-    ("Player stepping on item pickup stores item", CheckItemPickupStoresItem)
+    ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
+    ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads)
 };
 
 foreach (var (name, run) in checks)
@@ -252,9 +253,70 @@ static void CheckItemPickupStoresItem()
     }
 }
 
-static GameSession CreateSession()
+static void CheckFixedFloorDefinitionLoads()
 {
-    return new GameSession(new Random(0), new AudioService(), new ScoreboardService(new InMemoryScoreStorage()), ItemCatalog.CreateTutorialItems());
+    var dungeon = new DungeonDefinition(
+        "test-dungeon",
+        "Test Dungeon",
+        [
+            new FloorDefinition(
+                "fixed-floor",
+                "Fixed Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.###...#",
+                        "#...#...#",
+                        "#...#...#",
+                        "#...###.#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ],
+                    monsters:
+                    [
+                        new MonsterPlacement(MonsterKind.Bird, new Point2(2, 1))
+                    ],
+                    worldObjects:
+                    [
+                        new WorldObjectPlacement(new WorldObjectDefinition(WorldObjectDefinitionKind.ItemPickup, "power"), new Point2(4, 6))
+                    ]),
+                new SpawnProfile(10, 1, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var session = CreateSession(dungeon);
+    session.StartGame();
+
+    if (session.Player.Tile.Position != new Point2(1, 1))
+    {
+        throw new Exception($"fixed floor player start mismatch: {session.Player.Tile.Position}");
+    }
+
+    if (session.Grid.GetTile(7, 7).Kind != TileKind.Exit)
+    {
+        throw new Exception("fixed floor exit was not loaded");
+    }
+
+    if (session.Monsters.Count != 1 || session.Monsters[0].Kind != MonsterKind.Bird)
+    {
+        throw new Exception("fixed floor monster placement was not loaded");
+    }
+
+    if (session.Grid.GetTile(4, 6).WorldObject is not ItemPickup pickup || pickup.Item.Id != "power")
+    {
+        throw new Exception("fixed floor item pickup was not loaded");
+    }
+}
+
+static GameSession CreateSession(DungeonDefinition? dungeon = null)
+{
+    return new GameSession(
+        new Random(0),
+        new AudioService(),
+        new ScoreboardService(new InMemoryScoreStorage()),
+        ItemCatalog.CreateTutorialItems(),
+        dungeon);
 }
 
 static LevelGrid CreateOpenFloorGrid(int size)

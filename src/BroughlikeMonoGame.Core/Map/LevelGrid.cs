@@ -62,6 +62,11 @@ public sealed class LevelGrid
         return passableCount;
     }
 
+    public void SetTile(int x, int y, TileKind kind)
+    {
+        _tiles[x, y] = new Tile(x, y, kind);
+    }
+
     public Tile GetRandomPassableTile(Random random, Func<Tile, bool>? predicate = null)
     {
         for (var attempts = 0; attempts < 1000; attempts++)

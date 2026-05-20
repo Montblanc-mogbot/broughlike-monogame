@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BroughlikeMonoGame.Core;
 
@@ -19,4 +20,9 @@ public static class MonsterCatalog
         Eater,
         Jester,
     ];
+
+    public static MonsterArchetype Get(MonsterKind kind)
+        => kind == MonsterKind.Player
+            ? Player
+            : Enemies.First(archetype => archetype.Kind == kind);
 }

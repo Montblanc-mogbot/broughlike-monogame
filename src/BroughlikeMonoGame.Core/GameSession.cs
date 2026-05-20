@@ -10,14 +10,17 @@ public sealed class GameSession
     private readonly AudioService _audio;
     private readonly ScoreboardService _scoreboard;
     private readonly Dictionary<string, ItemDefinition> _itemCatalog;
+    private readonly DungeonDefinition _dungeon;
     private readonly List<MonsterActor> _monsters = [];
+    private FloorDefinition? _currentFloor;
 
-    public GameSession(Random random, AudioService audio, ScoreboardService scoreboard, IReadOnlyList<ItemDefinition> itemCatalog)
+    public GameSession(Random random, AudioService audio, ScoreboardService scoreboard, IReadOnlyList<ItemDefinition> itemCatalog, DungeonDefinition? dungeon = null)
     {
         _random = random;
         _audio = audio;
         _scoreboard = scoreboard;
         _itemCatalog = itemCatalog.ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase);
+        _dungeon = dungeon ?? DungeonCatalog.CreateTutorialDungeon();
         Scores = _scoreboard.Load();
         Mode = GameMode.Title;
         Grid = new LevelGrid(Layout.MapTiles);
@@ -68,11 +71,30 @@ public sealed class GameSession
 
     public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds)
     {
-        SpawnRate = GameConstants.InitialSpawnRate;
+        _currentFloor = _dungeon.GetFloor(Level);
+        SpawnRate = _currentFloor.SpawnProfile.InitialSpawnRate;
         SpawnCounter = SpawnRate;
-        Grid = new LevelGrid(Layout.MapTiles);
-        GenerateLevel();
-        Player = new MonsterActor(MonsterCatalog.Player, Grid.GetRandomPassableTile(_random), isPlayer: true);
+
+        var plan = _currentFloor.LevelSource.Build(
+            _random,
+            new FloorBuildContext(Level, Layout.MapTiles, _currentFloor.SpawnProfile, ResolveItemDefinition));
+
+        Grid = plan.Grid;
+        _monsters.Clear();
+
+        foreach (var placement in plan.Monsters)
+        {
+            var monsterTile = Grid.GetTile(placement.Position.X, placement.Position.Y);
+            _monsters.Add(new MonsterActor(MonsterCatalog.Get(placement.Kind), monsterTile));
+        }
+
+        foreach (var placement in plan.WorldObjects)
+        {
+            var tile = Grid.GetTile(placement.Position.X, placement.Position.Y);
+            tile.WorldObject = WorldObjectFactory.Create(placement.Definition, ResolveItemDefinition);
+        }
+
+        Player = new MonsterActor(MonsterCatalog.Player, Grid.GetTile(plan.PlayerStart.X, plan.PlayerStart.Y), isPlayer: true);
         Player.Heal(playerHp - Player.Hp);
         Inventory = new Inventory();
         if (inventoryItemIds is null)
@@ -83,7 +105,6 @@ public sealed class GameSession
         {
             Inventory.LoadFromIds(inventoryItemIds, ResolveItemDefinition);
         }
-        PlaceExit();
     }
 
     public void AdvanceFrame()
@@ -303,40 +324,11 @@ public sealed class GameSession
         Inventory.TryStore(GetRandomItemDefinition(), InventoryCapacity);
     }
 
-    private void GenerateLevel()
-    {
-        for (var attempts = 0; attempts < 1000; attempts++)
-        {
-            var passableTiles = Grid.Generate(_random);
-            var candidate = Grid.GetRandomPassableTile(_random);
-            if (passableTiles == Grid.CountPassableConnectedFrom(candidate))
-            {
-                GenerateMonsters();
-                for (var i = 0; i < 3; i++)
-                {
-                    SpawnTreasurePickup();
-                }
-
-                return;
-            }
-        }
-
-        throw new InvalidOperationException("Timed out generating a connected map.");
-    }
-
-    private void GenerateMonsters()
-    {
-        _monsters.Clear();
-        for (var i = 0; i < Level + 1; i++)
-        {
-            SpawnMonster();
-        }
-    }
-
     private void SpawnMonster()
     {
-        var archetype = MonsterCatalog.Enemies[_random.Next(MonsterCatalog.Enemies.Count)];
-        var monster = new MonsterActor(archetype, Grid.GetRandomPassableTile(_random));
+        var spawnProfile = _currentFloor?.SpawnProfile ?? _dungeon.GetFloor(Math.Clamp(Level, 1, _dungeon.FloorCount)).SpawnProfile;
+        var archetype = MonsterCatalog.Get(spawnProfile.PickRandomMonster(_random));
+        var monster = new MonsterActor(archetype, Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null && tile != Player.Tile));
         _monsters.Add(monster);
     }
 
@@ -418,7 +410,7 @@ public sealed class GameSession
         {
             case TileKind.Exit when actor.IsPlayer:
                 _audio.Play("newLevel");
-                if (Level == GameConstants.NumberOfLevels)
+                if (Level == _dungeon.FloorCount)
                 {
                     WinRun();
                 }
@@ -438,12 +430,6 @@ public sealed class GameSession
         var stunned = defender.Stunned && !defender.Dead ? " stunned" : string.Empty;
         var defeated = defender.Dead ? " down" : string.Empty;
         return $"{attackerName} hit {defenderName}{stunned}{defeated}";
-    }
-
-    private void PlaceExit()
-    {
-        var tile = Grid.GetRandomPassableTile(_random, tile => tile != Player.Tile);
-        Grid.Replace(tile, TileKind.Exit);
     }
 
     private void DrawInitialInventory(int count)
