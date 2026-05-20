@@ -54,6 +54,8 @@ public sealed class GameSession
 
     public int Level { get; private set; } = 1;
 
+    public string CurrentFloorDisplayName => _currentFloor?.DisplayName ?? $"Floor {Level}";
+
     public int Score { get; private set; }
 
     public int SpawnRate { get; private set; }

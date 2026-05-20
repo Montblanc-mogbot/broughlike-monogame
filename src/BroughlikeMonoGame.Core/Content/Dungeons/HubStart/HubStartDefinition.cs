@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace BroughlikeMonoGame.Core;
 
 public static class HubStartDefinition
@@ -15,22 +13,14 @@ public static class HubStartDefinition
                     new FixedLevelSource(
                         [
                             "#########",
-                            "#@......#",
+                            "#@>.....#",
                             "#.......#",
                             "#.......#",
                             "#.......#",
                             "#.......#",
                             "#.......#",
-                            "#......>#",
+                            "#.......#",
                             "#########"
-                        ],
-                        worldObjects:
-                        [
-                            new WorldObjectPlacement(
-                                new WorldObjectDefinition(
-                                    WorldObjectDefinitionKind.Portal,
-                                    PortalDestination: new PortalDestination("tutorial", 1, "Enter the dungeon")),
-                                new Point2(2, 1))
                         ]),
                     new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]),
                     new ExitDefinition(

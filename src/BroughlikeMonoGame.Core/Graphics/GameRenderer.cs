@@ -321,15 +321,16 @@ public sealed class GameRenderer
     private void DrawSidebar(SpriteBatch spriteBatch, GameSession session)
     {
         var x = Layout.ScreenWidth - Layout.UiTilesWide * Layout.TileSize + 18;
-        DrawText(spriteBatch, $"Level: {session.Level}", new Vector2(x, 30), Palette.UiPrimary, 0.8f);
-        DrawText(spriteBatch, $"Score: {session.Score}", new Vector2(x, 65), Palette.UiPrimary, 0.8f);
-        DrawText(spriteBatch, $"HP: {MathF.Ceiling(session.Player.Hp)}/{GameConstants.MaxHp}", new Vector2(x, 100), Palette.UiMuted, 0.65f);
+        DrawText(spriteBatch, session.CurrentDungeon.DisplayName, new Vector2(x, 30), Palette.UiPrimary, 0.72f);
+        DrawText(spriteBatch, session.CurrentFloorDisplayName, new Vector2(x, 60), Palette.UiMuted, 0.56f);
+        DrawText(spriteBatch, $"Score: {session.Score}", new Vector2(x, 95), Palette.UiPrimary, 0.8f);
+        DrawText(spriteBatch, $"HP: {MathF.Ceiling(session.Player.Hp)}/{GameConstants.MaxHp}", new Vector2(x, 130), Palette.UiMuted, 0.65f);
 
         for (var i = 0; i < session.Inventory.SlotCount; i++)
         {
             var item = session.Inventory.GetItem(i);
             var text = $"{i + 1}) {item?.DisplayName ?? string.Empty}";
-            DrawText(spriteBatch, text, new Vector2(x, 145 + i * 34), Palette.UiAccent, 0.62f);
+            DrawText(spriteBatch, text, new Vector2(x, 175 + i * 34), Palette.UiAccent, 0.62f);
         }
 
         if (!string.IsNullOrWhiteSpace(session.BannerMessage) && session.Mode == GameMode.Running)

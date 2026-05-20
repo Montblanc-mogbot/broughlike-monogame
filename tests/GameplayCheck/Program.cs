@@ -304,9 +304,9 @@ static void CheckDefaultRegistryStartsInHub()
         throw new Exception($"default starting dungeon mismatch: {session.CurrentDungeonId}");
     }
 
-    if (session.Grid.GetTile(2, 1).WorldObject is not PortalWorldObject portal || portal.Destination.DungeonId != "tutorial")
+    if (session.Grid.GetTile(2, 1).Kind != TileKind.Exit)
     {
-        throw new Exception("start hub does not contain the tutorial portal");
+        throw new Exception("start hub does not place the authored dungeon door next to the player");
     }
 }
 
