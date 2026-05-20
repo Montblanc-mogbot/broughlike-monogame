@@ -16,6 +16,7 @@ var checks = new List<(string name, Action run)>
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
+    ("Dungeon exits can route to different hubs based on inventory outcomes", CheckConditionalExitRouting),
     ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip)
 };
 
@@ -467,6 +468,130 @@ static void CheckProgressGatedPortal()
     if (session.CurrentDungeonId != "crypt")
     {
         throw new Exception("unlocked portal did not transition dungeons");
+    }
+}
+
+static void CheckConditionalExitRouting()
+{
+    var hub1 = new DungeonDefinition(
+        "hub-1",
+        "Hub 1",
+        [
+            new FloorDefinition(
+                "hub-1-floor",
+                "Hub 1 Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var hub2 = new DungeonDefinition(
+        "hub-2",
+        "Hub 2",
+        [
+            new FloorDefinition(
+                "hub-2-floor",
+                "Hub 2 Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#.......#",
+                        "#..@....#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var hub3 = new DungeonDefinition(
+        "hub-3",
+        "Hub 3",
+        [
+            new FloorDefinition(
+                "hub-3-floor",
+                "Hub 3 Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#.......#",
+                        "#...@...#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var dungeon = new DungeonDefinition(
+        "key-dungeon",
+        "Key Dungeon",
+        [
+            new FloorDefinition(
+                "key-dungeon-floor-1",
+                "Key Dungeon Floor 1",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@>.....#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#########"
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]),
+                new ExitDefinition(
+                    [
+                        new ExitRoute(new PortalDestination("hub-2", 1, "Returned with the key"), RequiredItemId: "power", Label: "Returned with the key"),
+                        new ExitRoute(new PortalDestination("hub-3", 1, "Returned empty-handed"), Label: "Returned empty-handed")
+                    ]))
+        ]);
+
+    var registry = new DungeonRegistry([hub1, hub2, hub3, dungeon]);
+
+    var successSession = CreateSession(registry, "key-dungeon");
+    successSession.StartGame();
+    var successInventory = new Inventory();
+    successInventory.AddSlot(ItemCatalog.CreateTutorialItems().First(item => item.Id == "power"));
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(successSession, successInventory);
+    successSession.TryMovePlayer(new Point2(1, 0));
+
+    if (successSession.CurrentDungeonId != "hub-2")
+    {
+        throw new Exception($"successful exit did not route to hub-2: {successSession.CurrentDungeonId}");
+    }
+
+    var failureSession = CreateSession(registry, "key-dungeon");
+    failureSession.StartGame();
+    var failureInventory = new Inventory();
+    failureInventory.AddSlot();
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(failureSession, failureInventory);
+    failureSession.TryMovePlayer(new Point2(1, 0));
+
+    if (failureSession.CurrentDungeonId != "hub-3")
+    {
+        throw new Exception($"failed exit did not route to hub-3: {failureSession.CurrentDungeonId}");
     }
 }
 

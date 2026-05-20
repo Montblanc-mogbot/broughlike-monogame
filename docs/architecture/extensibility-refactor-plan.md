@@ -171,6 +171,7 @@ The current codebase now has the first real extensibility foundation in place:
 - `PortalDestination` + `PortalWorldObject` now allow authored floors to transition into other dungeon definitions, which is the first real hub/gate plumbing.
 - `SaveGame` snapshots plus `GameSession.CreateSaveGame()` / `LoadSaveGame()` now preserve the active dungeon, floor, hp, score, and inventory state across sessions, which establishes the first run-state persistence boundary.
 - Progress flags now live in `GameSession` and save with `SaveGame`, and world objects can declare simple required/granted flags. That gives hub gates a first real world-state hook instead of being purely static authored geometry.
+- `ExitDefinition` + ordered `ExitRoute` rules now let authored/generated dungeon exits route back into different hubs based on inventory/progression conditions. That is the first explicit story-outcome transition model.
 
 This is intentionally still code-first, but the architecture boundary is now pointed in the right direction for later hand-authored content and data-file loading.
 
@@ -178,6 +179,6 @@ This is intentionally still code-first, but the architecture boundary is now poi
 The next useful refactor steps are:
 1. replace hardcoded tutorial/hub dungeon construction with a more explicit content catalog/layout folder structure,
 2. define richer hub-specific interactables/NPC props on top of the world-object layer,
-3. expand save-state models beyond run snapshots so authored hub floors, world-state gates, unlock flags, and active dungeon runs can all persist cleanly.
+3. expand save-state models beyond run snapshots so authored hub floors, world-state gates, unlock flags, active dungeon runs, and branch-specific story consequences can all persist cleanly.
 
 That keeps the current gameplay stable while moving toward the hub + portal + authored-content shape.

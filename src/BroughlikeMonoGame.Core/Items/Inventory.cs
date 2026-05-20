@@ -14,6 +14,9 @@ public sealed class Inventory
 
     public ItemDefinition? GetItem(int index) => index >= 0 && index < _slots.Count ? _slots[index] : null;
 
+    public bool ContainsItem(string itemId)
+        => _slots.Any(item => string.Equals(item?.Id, itemId, StringComparison.OrdinalIgnoreCase));
+
     public void AddSlot(ItemDefinition? item = null) => _slots.Add(item);
 
     public void LoadFromIds(IEnumerable<string?> itemIds, Func<string, ItemDefinition> resolver)

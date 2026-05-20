@@ -119,6 +119,29 @@ public sealed class GameSession
         StartLevel(playerHp ?? Player.Hp, inventoryItemIds ?? Inventory.ToItemIds());
     }
 
+    public bool EvaluateExitRoute(ExitRoute route)
+    {
+        if (!string.IsNullOrWhiteSpace(route.RequiredItemId))
+        {
+            var hasItem = Inventory.ContainsItem(route.RequiredItemId);
+            if (route.RequireItem != hasItem)
+            {
+                return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(route.RequiredProgressFlag))
+        {
+            var hasFlag = HasProgressFlag(route.RequiredProgressFlag);
+            if (route.RequireProgressFlag != hasFlag)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public bool HasProgressFlag(string flag)
         => _progressFlags.Contains(flag);
 
@@ -476,6 +499,11 @@ public sealed class GameSession
         {
             case TileKind.Exit when actor.IsPlayer:
                 _audio.Play("newLevel");
+                if (TryResolveCustomExit())
+                {
+                    break;
+                }
+
                 if (Level == CurrentDungeon.FloorCount)
                 {
                     WinRun();
@@ -487,6 +515,34 @@ public sealed class GameSession
                 }
                 break;
         }
+    }
+
+    private bool TryResolveCustomExit()
+    {
+        var exitDefinition = _currentFloor?.Exit;
+        if (exitDefinition is null)
+        {
+            return false;
+        }
+
+        foreach (var route in exitDefinition.Routes)
+        {
+            if (!EvaluateExitRoute(route))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(route.GrantsProgressFlag))
+            {
+                UnlockProgressFlag(route.GrantsProgressFlag);
+            }
+
+            EnterDungeon(route.Destination.DungeonId, route.Destination.FloorNumber);
+            BannerMessage = route.Label ?? route.Destination.Label ?? $"Entered {route.Destination.DungeonId}";
+            return true;
+        }
+
+        return false;
     }
 
     private string DescribeAttack(MonsterActor attacker, MonsterActor defender)
