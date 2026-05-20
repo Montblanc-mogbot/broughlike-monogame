@@ -14,7 +14,8 @@ var checks = new List<(string name, Action run)>
     ("Treasure threshold spawns pickup instead of granting item directly", CheckTreasureThresholdSpawnsPickup),
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
-    ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons)
+    ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
+    ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip)
 };
 
 foreach (var (name, run) in checks)
@@ -386,6 +387,99 @@ static void CheckPortalTransitionsBetweenDungeons()
     if (session.BannerMessage != "Enter the crypt")
     {
         throw new Exception($"portal did not set entry banner: {session.BannerMessage}");
+    }
+}
+
+static void CheckSaveGameRoundTrip()
+{
+    var hub = new DungeonDefinition(
+        "hub",
+        "Hub",
+        [
+            new FloorDefinition(
+                "hub-floor",
+                "Hub Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var crypt = new DungeonDefinition(
+        "crypt",
+        "Crypt",
+        [
+            new FloorDefinition(
+                "crypt-floor-1",
+                "Crypt Floor 1",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#.......#",
+                        "#..@....#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(12, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var session = CreateSession(new DungeonRegistry([hub, crypt]), "hub");
+    session.StartGame();
+    SetProperty(session, nameof(GameSession.InventoryCapacity), 2);
+    var inventory = new Inventory();
+    inventory.AddSlot(ItemCatalog.CreateTutorialItems().First(item => item.Id == "power"));
+    inventory.AddSlot();
+    typeof(GameSession).GetProperty(nameof(GameSession.Inventory), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
+        .SetValue(session, inventory);
+    SetProperty(session, nameof(GameSession.Score), 7);
+    session.EnterDungeon("crypt", 1, playerHp: 2f, inventoryItemIds: inventory.ToItemIds());
+
+    var save = session.CreateSaveGame();
+
+    var restored = CreateSession(new DungeonRegistry([hub, crypt]), "hub");
+    restored.LoadSaveGame(save);
+
+    if (restored.CurrentDungeonId != "crypt")
+    {
+        throw new Exception($"restored dungeon mismatch: {restored.CurrentDungeonId}");
+    }
+
+    if (restored.Level != 1)
+    {
+        throw new Exception($"restored level mismatch: {restored.Level}");
+    }
+
+    if (restored.Score != 7)
+    {
+        throw new Exception($"restored score mismatch: {restored.Score}");
+    }
+
+    if (restored.InventoryCapacity != 2)
+    {
+        throw new Exception($"restored inventory capacity mismatch: {restored.InventoryCapacity}");
+    }
+
+    if (restored.Inventory.GetItem(0)?.Id != "power")
+    {
+        throw new Exception("restored inventory item mismatch");
+    }
+
+    if (restored.Player.Hp != 2f)
+    {
+        throw new Exception($"restored player hp mismatch: {restored.Player.Hp}");
     }
 }
 

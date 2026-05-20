@@ -83,6 +83,26 @@ public sealed class GameSession
         Mode = GameMode.Running;
     }
 
+    public SaveGame CreateSaveGame()
+        => new(
+            CurrentDungeonId,
+            Level,
+            Player.Hp,
+            Score,
+            InventoryCapacity,
+            Inventory.ToItemIds());
+
+    public void LoadSaveGame(SaveGame saveGame)
+    {
+        CurrentDungeonId = saveGame.DungeonId;
+        Level = saveGame.FloorNumber;
+        Score = saveGame.Score;
+        InventoryCapacity = saveGame.InventoryCapacity;
+        StartLevel(saveGame.PlayerHp, saveGame.InventoryItemIds);
+        Mode = GameMode.Running;
+        BannerMessage = $"Resumed {CurrentDungeon.DisplayName}";
+    }
+
     public void EnterDungeon(string dungeonId, int floorNumber, float? playerHp = null, IReadOnlyList<string?>? inventoryItemIds = null)
     {
         CurrentDungeonId = dungeonId;
