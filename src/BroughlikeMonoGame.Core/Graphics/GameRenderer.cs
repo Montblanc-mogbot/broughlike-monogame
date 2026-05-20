@@ -188,6 +188,8 @@ public sealed class GameRenderer
                 WorldObjectVisualKind.Bed => _art.ApartmentBed,
                 WorldObjectVisualKind.Dresser => _art.ApartmentDresser,
                 WorldObjectVisualKind.Npc => _art.ApartmentFigure,
+                WorldObjectVisualKind.Armchair => _art.ApartmentArmchair,
+                WorldObjectVisualKind.SideTable => _art.ApartmentSideTable,
                 _ => null,
             };
 
@@ -216,6 +218,12 @@ public sealed class GameRenderer
                 DrawBed(spriteBatch, tile, shake);
                 break;
             case WorldObjectVisualKind.Dresser:
+                DrawDresser(spriteBatch, tile, shake);
+                break;
+            case WorldObjectVisualKind.Armchair:
+                DrawNpc(spriteBatch, tile, shake);
+                break;
+            case WorldObjectVisualKind.SideTable:
                 DrawDresser(spriteBatch, tile, shake);
                 break;
         }

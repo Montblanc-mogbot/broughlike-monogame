@@ -26,4 +26,6 @@ public enum WorldObjectVisualKind
     Npc,
     Bed,
     Dresser,
+    Armchair,
+    SideTable,
 }

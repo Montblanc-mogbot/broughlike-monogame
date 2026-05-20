@@ -48,3 +48,13 @@
 /processor:TextureProcessor
 /build:Sprites/ApartmentFigure.png
 
+#begin Sprites/ApartmentArmchair.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentArmchair.png
+
+#begin Sprites/ApartmentSideTable.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentSideTable.png
+

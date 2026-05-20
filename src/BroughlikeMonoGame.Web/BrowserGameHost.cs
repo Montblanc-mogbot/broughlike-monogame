@@ -62,7 +62,9 @@ internal sealed class BrowserGameHost : Game
             Content.Load<Texture2D>("Sprites/ApartmentDoor"),
             Content.Load<Texture2D>("Sprites/ApartmentBed"),
             Content.Load<Texture2D>("Sprites/ApartmentDresser"),
-            Content.Load<Texture2D>("Sprites/ApartmentFigure"));
+            Content.Load<Texture2D>("Sprites/ApartmentFigure"),
+            Content.Load<Texture2D>("Sprites/ApartmentArmchair"),
+            Content.Load<Texture2D>("Sprites/ApartmentSideTable"));
         _app = new GameApp(new GameAppDependencies(_font, _pixel, art), new BrowserScoreStorage());
     }
 

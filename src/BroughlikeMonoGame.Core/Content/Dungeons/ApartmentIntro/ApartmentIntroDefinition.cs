@@ -85,7 +85,7 @@ public static class ApartmentIntroDefinition
                                 WorldObjectDefinitionKind.ScriptedInteractable,
                                 DisplayName: "Armchair",
                                 Message: null,
-                                VisualKind: WorldObjectVisualKind.Bed,
+                                VisualKind: WorldObjectVisualKind.Armchair,
                                 BlocksMovement: true),
                             new Point2(2, 1)),
                         new WorldObjectPlacement(
@@ -93,7 +93,7 @@ public static class ApartmentIntroDefinition
                                 WorldObjectDefinitionKind.ScriptedInteractable,
                                 DisplayName: "Side Table",
                                 Message: null,
-                                VisualKind: WorldObjectVisualKind.Dresser,
+                                VisualKind: WorldObjectVisualKind.SideTable,
                                 BlocksMovement: true),
                             new Point2(5, 2))
                     ]),

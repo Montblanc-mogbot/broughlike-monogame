@@ -8,4 +8,6 @@ public sealed record GameArt(
     Texture2D ApartmentDoor,
     Texture2D ApartmentBed,
     Texture2D ApartmentDresser,
-    Texture2D ApartmentFigure);
+    Texture2D ApartmentFigure,
+    Texture2D ApartmentArmchair,
+    Texture2D ApartmentSideTable);
