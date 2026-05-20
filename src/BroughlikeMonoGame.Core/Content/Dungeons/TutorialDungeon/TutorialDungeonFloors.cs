@@ -10,11 +10,25 @@ public static class TutorialDungeonFloors
         var floors = new List<FloorDefinition>();
         for (var level = 1; level <= GameConstants.NumberOfLevels; level++)
         {
+            var exit = level == GameConstants.NumberOfLevels
+                ? new ExitDefinition(
+                [
+                    new ExitRoute(
+                        new PortalDestination("hub-success", 1, "Returned with the key"),
+                        RequiredItemId: "power",
+                        Label: "Returned with the key"),
+                    new ExitRoute(
+                        new PortalDestination("hub-failure", 1, "Returned empty-handed"),
+                        Label: "Returned empty-handed")
+                ])
+                : null;
+
             floors.Add(new FloorDefinition(
                 $"tutorial-floor-{level}",
                 $"Tutorial Floor {level}",
                 new ProceduralLevelSource(),
-                spawnProfile));
+                spawnProfile,
+                exit));
         }
 
         return floors;

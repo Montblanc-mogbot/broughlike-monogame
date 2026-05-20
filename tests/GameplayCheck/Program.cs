@@ -14,6 +14,7 @@ var checks = new List<(string name, Action run)>
     ("Treasure no longer spawns score-based item rewards", CheckTreasureNoLongerSpawnsScoreItems),
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
     ("Enemy death drops configured item pickups", CheckEnemyDeathDropsConfiguredItem),
+    ("Default registry starts the game in the authored start hub", CheckDefaultRegistryStartsInHub),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
@@ -283,6 +284,29 @@ static void CheckEnemyDeathDropsConfiguredItem()
     if (grid.GetTile(3, 2).WorldObject is not ItemPickup pickup || pickup.Item.Id != "power")
     {
         throw new Exception("enemy death did not drop the configured item pickup");
+    }
+}
+
+static void CheckDefaultRegistryStartsInHub()
+{
+    var session = new GameSession(
+        new Random(0),
+        new AudioService(),
+        new ScoreboardService(new InMemoryScoreStorage()),
+        ItemCatalog.CreateTutorialItems(),
+        DungeonCatalog.CreateDefaultRegistry(),
+        DungeonCatalog.DefaultStartingDungeonId);
+
+    session.StartGame();
+
+    if (session.CurrentDungeonId != "hub-start")
+    {
+        throw new Exception($"default starting dungeon mismatch: {session.CurrentDungeonId}");
+    }
+
+    if (session.Grid.GetTile(2, 1).WorldObject is not PortalWorldObject portal || portal.Destination.DungeonId != "tutorial")
+    {
+        throw new Exception("start hub does not contain the tutorial portal");
     }
 }
 
