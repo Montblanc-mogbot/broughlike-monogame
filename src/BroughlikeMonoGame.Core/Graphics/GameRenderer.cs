@@ -57,7 +57,7 @@ public sealed class GameRenderer
 
     private void DrawTitle(SpriteBatch spriteBatch, GameSession session)
     {
-        DrawOverlay(spriteBatch, "SUPER\nBROUGH BROS.");
+        DrawOverlay(spriteBatch, "THE\nTRIAL");
         DrawTextCentered(spriteBatch, session.BannerMessage ?? string.Empty, Layout.ScreenHeight / 2 + 10, Palette.UiAccent, 0.7f);
 
         if (session.Scores.Count == 0)

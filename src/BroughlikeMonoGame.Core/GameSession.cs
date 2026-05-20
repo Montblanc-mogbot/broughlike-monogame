@@ -85,6 +85,7 @@ public sealed class GameSession
         InventoryCapacity = GameConstants.InitialSpellCount;
         StartLevel(GameConstants.StartingHp, null);
         Mode = GameMode.Running;
+        BannerMessage = null;
     }
 
     public SaveGame CreateSaveGame()
@@ -545,7 +546,7 @@ public sealed class GameSession
             }
 
             EnterDungeon(route.Destination.DungeonId, route.Destination.FloorNumber);
-            BannerMessage = route.Label ?? route.Destination.Label ?? $"Entered {route.Destination.DungeonId}";
+            BannerMessage = route.Label ?? route.Destination.Label;
             return true;
         }
 

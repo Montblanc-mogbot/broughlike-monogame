@@ -334,7 +334,7 @@ static void CheckDresserSpawnsBlackSuit()
     session.TryMovePlayer(new Point2(1, 0));
     session.TryMovePlayer(new Point2(0, -1));
 
-    if (session.BannerMessage != "Put on your black suit")
+    if (session.BannerMessage != "Inside the dresser: a black suit, waiting as if it had expected you.")
     {
         throw new Exception($"dresser interaction banner mismatch: {session.BannerMessage}");
     }
@@ -352,7 +352,7 @@ static void CheckApartmentIntroRequiresBlackSuit()
 
     Walk(session, (0, -1), (0, -1), (-1, 0), (-1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
-    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
 
     if (session.CurrentDungeonId != "apartment-intro" || session.CurrentFloorDisplayName != "Bedroom")
@@ -370,7 +370,7 @@ static void CheckApartmentIntroAdvancesWithBlackSuit()
     Walk(session, (1, 0), (0, -1));
     Walk(session, (0, 1), (-1, 0), (-1, 0), (-1, 0), (-1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
-    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
 
     if (session.CurrentDungeonId != "tutorial")
