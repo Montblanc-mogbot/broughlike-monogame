@@ -9,10 +9,11 @@ public sealed class MonsterActor
     private const int AttackLungeDurationFrames = 8;
     private const int StunPulseDurationFrames = 18;
 
-    public MonsterActor(MonsterArchetype archetype, Tile tile, bool isPlayer = false)
+    public MonsterActor(MonsterArchetype archetype, Tile tile, bool isPlayer = false, WorldObjectDefinition? deathDrop = null)
     {
         Archetype = archetype;
         IsPlayer = isPlayer;
+        DeathDrop = deathDrop;
         MaxHp = archetype.MaxHp;
         Hp = archetype.MaxHp;
         TeleportCounter = isPlayer ? 0 : 2;
@@ -25,6 +26,8 @@ public sealed class MonsterActor
     public MonsterKind Kind => Archetype.Kind;
 
     public bool IsPlayer { get; }
+
+    public WorldObjectDefinition? DeathDrop { get; }
 
     public float MaxHp { get; }
 

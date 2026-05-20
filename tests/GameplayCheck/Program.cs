@@ -11,8 +11,9 @@ var checks = new List<(string name, Action run)>
     ("Player can move into tile after killing eater", CheckMoveAfterKillingEater),
     ("Stunned enemy does not retaliate same turn", CheckStunnedEnemyDoesNotRetaliate),
     ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot),
-    ("Treasure threshold spawns pickup instead of granting item directly", CheckTreasureThresholdSpawnsPickup),
+    ("Treasure no longer spawns score-based item rewards", CheckTreasureNoLongerSpawnsScoreItems),
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
+    ("Enemy death drops configured item pickups", CheckEnemyDeathDropsConfiguredItem),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
@@ -184,7 +185,7 @@ static void CheckUseItemConsumesSlot()
     }
 }
 
-static void CheckTreasureThresholdSpawnsPickup()
+static void CheckTreasureNoLongerSpawnsScoreItems()
 {
     var session = CreateSession();
     var grid = CreateOpenFloorGrid(7);
@@ -205,18 +206,18 @@ static void CheckTreasureThresholdSpawnsPickup()
 
     if (inventory.GetItem(0) is not null)
     {
-        throw new Exception("treasure threshold granted an item directly instead of spawning a pickup");
+        throw new Exception("treasure should not inject item rewards into inventory");
     }
 
-    if (inventory.SlotCount != 2)
+    if (inventory.SlotCount != 1)
     {
-        throw new Exception($"inventory capacity slot was not added: {inventory.SlotCount}");
+        throw new Exception($"inventory capacity changed unexpectedly: {inventory.SlotCount}");
     }
 
     var spawnedPickupCount = grid.AllTiles().Count(tile => tile.WorldObject is ItemPickup);
-    if (spawnedPickupCount != 1)
+    if (spawnedPickupCount != 0)
     {
-        throw new Exception($"expected exactly one spawned item pickup, found {spawnedPickupCount}");
+        throw new Exception($"score-based treasure should not spawn item pickups, found {spawnedPickupCount}");
     }
 }
 
@@ -254,6 +255,34 @@ static void CheckItemPickupStoresItem()
     if (grid.GetTile(3, 2).WorldObject is not null)
     {
         throw new Exception("item pickup was not consumed from the floor");
+    }
+}
+
+static void CheckEnemyDeathDropsConfiguredItem()
+{
+    var session = CreateSession();
+    var grid = CreateOpenFloorGrid(7);
+    SetProperty(session, nameof(GameSession.Grid), grid);
+
+    var player = new MonsterActor(MonsterCatalog.Player, grid.GetTile(3, 3), isPlayer: true);
+    SetProperty(session, nameof(GameSession.Player), player);
+    SetProperty(session, nameof(GameSession.Mode), GameMode.Running);
+
+    var eater = new MonsterActor(
+        MonsterCatalog.Eater,
+        grid.GetTile(3, 2),
+        deathDrop: new WorldObjectDefinition(WorldObjectDefinitionKind.ItemPickup, ItemId: "power"));
+    eater.TeleportCounter = 0;
+    var monsters = GetMonsters(session);
+    monsters.Clear();
+    monsters.Add(eater);
+
+    session.TryMovePlayer(new Point2(0, -1));
+    session.Tick();
+
+    if (grid.GetTile(3, 2).WorldObject is not ItemPickup pickup || pickup.Item.Id != "power")
+    {
+        throw new Exception("enemy death did not drop the configured item pickup");
     }
 }
 

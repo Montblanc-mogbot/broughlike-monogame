@@ -31,13 +31,30 @@ public sealed class ProceduralLevelSource : ILevelSource
         var monsters = new List<MonsterPlacement>();
         for (var i = 0; i < context.SpawnProfile.InitialMonsterCount; i++)
         {
-            monsters.Add(new MonsterPlacement(context.SpawnProfile.PickRandomMonster(random), TakeRandomTile(grid, random, reserved)));
+            WorldObjectDefinition? deathDrop = null;
+            if (i < context.SpawnProfile.InitialEnemyItemDropCount)
+            {
+                deathDrop = new WorldObjectDefinition(
+                    WorldObjectDefinitionKind.ItemPickup,
+                    ItemId: context.SpawnProfile.PickRandomItemId(random));
+            }
+
+            monsters.Add(new MonsterPlacement(context.SpawnProfile.PickRandomMonster(random), TakeRandomTile(grid, random, reserved), deathDrop));
         }
 
         var worldObjects = new List<WorldObjectPlacement>();
         for (var i = 0; i < context.SpawnProfile.InitialTreasureCount; i++)
         {
             worldObjects.Add(new WorldObjectPlacement(new WorldObjectDefinition(WorldObjectDefinitionKind.Treasure), TakeRandomTile(grid, random, reserved)));
+        }
+
+        for (var i = 0; i < context.SpawnProfile.InitialFloorItemCount; i++)
+        {
+            worldObjects.Add(new WorldObjectPlacement(
+                new WorldObjectDefinition(
+                    WorldObjectDefinitionKind.ItemPickup,
+                    ItemId: context.SpawnProfile.PickRandomItemId(random)),
+                TakeRandomTile(grid, random, reserved)));
         }
 
         grid.Replace(grid.GetTile(exitPosition.X, exitPosition.Y), TileKind.Exit);

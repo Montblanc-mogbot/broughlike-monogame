@@ -169,7 +169,7 @@ public sealed class GameSession
         foreach (var placement in plan.Monsters)
         {
             var monsterTile = Grid.GetTile(placement.Position.X, placement.Position.Y);
-            _monsters.Add(new MonsterActor(MonsterCatalog.Get(placement.Kind), monsterTile));
+            _monsters.Add(new MonsterActor(MonsterCatalog.Get(placement.Kind), monsterTile, deathDrop: placement.DeathDrop));
         }
 
         foreach (var placement in plan.WorldObjects)
@@ -245,6 +245,7 @@ public sealed class GameSession
         {
             if (monster.Dead)
             {
+                ResolveDeadMonster(monster);
                 _monsters.Remove(monster);
                 continue;
             }
@@ -285,13 +286,6 @@ public sealed class GameSession
     public void GainTreasure()
     {
         Score++;
-        if (Score % 3 == 0 && InventoryCapacity < GameConstants.MaxSpells)
-        {
-            InventoryCapacity++;
-            Inventory.AddSlot();
-            SpawnItemPickup();
-        }
-
         _audio.Play("treasure");
         SpawnMonster();
     }
@@ -401,11 +395,6 @@ public sealed class GameSession
     {
         monster.Damage(damage, sourceDirection);
         _audio.Play(monster.IsPlayer ? "hit1" : "hit2");
-    }
-
-    public void AddRandomItem()
-    {
-        Inventory.TryStore(GetRandomItemDefinition(), InventoryCapacity);
     }
 
     private void SpawnMonster()
@@ -556,30 +545,24 @@ public sealed class GameSession
 
     private void DrawInitialInventory(int count)
     {
-        foreach (var item in _itemCatalog.Values.OrderBy(_ => _random.Next()).Take(count))
-        {
-            Inventory.AddSlot(item);
-        }
-
         while (Inventory.SlotCount < count)
         {
             Inventory.AddSlot();
         }
     }
 
-    private ItemDefinition GetRandomItemDefinition() => _itemCatalog.Values.ElementAt(_random.Next(_itemCatalog.Count));
+    private void ResolveDeadMonster(MonsterActor monster)
+    {
+        if (monster.DeathDrop is not null && monster.Tile.WorldObject is null)
+        {
+            monster.Tile.WorldObject = WorldObjectFactory.Create(monster.DeathDrop, ResolveItemDefinition);
+        }
+    }
 
     private void SpawnTreasurePickup()
     {
         var tile = Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null);
         tile.WorldObject = new TreasurePickup();
-    }
-
-    private void SpawnItemPickup()
-    {
-        var tile = Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null);
-        tile.WorldObject = new ItemPickup(GetRandomItemDefinition());
-        BannerMessage = "An item appeared.";
     }
 
     private ItemDefinition ResolveItemDefinition(string itemId) => _itemCatalog[itemId];
