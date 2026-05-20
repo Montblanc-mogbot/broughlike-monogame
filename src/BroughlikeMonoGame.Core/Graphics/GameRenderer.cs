@@ -6,6 +6,15 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace BroughlikeMonoGame.Core;
 
+internal enum ApartmentRoomStyle
+{
+    Default,
+    Bedroom,
+    LivingRoom,
+    Hallway,
+    BurstnerRoom,
+}
+
 public sealed class GameRenderer
 {
     private const int TileInset = 3;
@@ -41,6 +50,7 @@ public sealed class GameRenderer
             return;
         }
 
+        _currentFloorName = session.CurrentFloorDisplayName;
         DrawBoard(spriteBatch, session);
         DrawSidebar(spriteBatch, session);
 
@@ -113,15 +123,8 @@ public sealed class GameRenderer
         var rect = TileRect(tile.Position, shake);
         if (useApartmentSprites)
         {
-            var texture = tile.Kind switch
-            {
-                TileKind.Floor => _art.ApartmentFloor,
-                TileKind.Wall => _art.ApartmentWall,
-                TileKind.Exit => _art.ApartmentDoor,
-                _ => _art.ApartmentFloor,
-            };
-
-            spriteBatch.Draw(texture, rect, Color.White);
+            var (texture, tint) = GetApartmentTileArt(tile);
+            spriteBatch.Draw(texture, rect, tint);
             spriteBatch.Draw(_pixel, rect, Color.Black * 0.18f);
             return;
         }
@@ -568,6 +571,59 @@ public sealed class GameRenderer
 
     private static bool UsesApartmentSprites(GameSession session)
         => string.Equals(session.CurrentDungeonId, "apartment-intro", StringComparison.OrdinalIgnoreCase);
+
+    private (Texture2D texture, Color tint) GetApartmentTileArt(Tile tile)
+    {
+        return CurrentApartmentRoomStyle switch
+        {
+            ApartmentRoomStyle.Bedroom => tile.Kind switch
+            {
+                TileKind.Floor => (_art.ApartmentBedroomFloor, Color.White),
+                TileKind.Wall => (_art.ApartmentBedroomWall, Color.White),
+                TileKind.Exit => (_art.ApartmentDoor, new Color(235, 228, 214)),
+                _ => (_art.ApartmentBedroomFloor, Color.White),
+            },
+            ApartmentRoomStyle.LivingRoom => tile.Kind switch
+            {
+                TileKind.Floor => (_art.ApartmentLivingRoomFloor, Color.White),
+                TileKind.Wall => (_art.ApartmentLivingRoomWall, Color.White),
+                TileKind.Exit => (_art.ApartmentDoor, new Color(219, 229, 214)),
+                _ => (_art.ApartmentLivingRoomFloor, Color.White),
+            },
+            ApartmentRoomStyle.Hallway => tile.Kind switch
+            {
+                TileKind.Floor => (_art.ApartmentLivingRoomFloor, new Color(164, 138, 124)),
+                TileKind.Wall => (_art.ApartmentWall, new Color(160, 156, 126)),
+                TileKind.Exit => (_art.ApartmentDoor, new Color(166, 126, 102)),
+                _ => (_art.ApartmentLivingRoomFloor, new Color(164, 138, 124)),
+            },
+            ApartmentRoomStyle.BurstnerRoom => tile.Kind switch
+            {
+                TileKind.Floor => (_art.ApartmentBedroomFloor, new Color(214, 196, 186)),
+                TileKind.Wall => (_art.ApartmentBedroomWall, new Color(214, 214, 232)),
+                TileKind.Exit => (_art.ApartmentDoor, new Color(210, 196, 180)),
+                _ => (_art.ApartmentBedroomFloor, new Color(214, 196, 186)),
+            },
+            _ => tile.Kind switch
+            {
+                TileKind.Floor => (_art.ApartmentFloor, Color.White),
+                TileKind.Wall => (_art.ApartmentWall, Color.White),
+                TileKind.Exit => (_art.ApartmentDoor, Color.White),
+                _ => (_art.ApartmentFloor, Color.White),
+            }
+        };
+    }
+
+    private ApartmentRoomStyle CurrentApartmentRoomStyle => _currentFloorName switch
+    {
+        "Bedroom" => ApartmentRoomStyle.Bedroom,
+        "Living Room" => ApartmentRoomStyle.LivingRoom,
+        "Hallway" => ApartmentRoomStyle.Hallway,
+        "Fraulein Burstner's Room" => ApartmentRoomStyle.BurstnerRoom,
+        _ => ApartmentRoomStyle.Default,
+    };
+
+    private string _currentFloorName = string.Empty;
 
     private void DrawDamageMarker(SpriteBatch spriteBatch, MonsterActor actor, Rectangle bounds)
     {

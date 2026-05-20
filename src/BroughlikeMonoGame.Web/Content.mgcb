@@ -58,3 +58,23 @@
 /processor:TextureProcessor
 /build:Sprites/ApartmentSideTable.png
 
+#begin Sprites/ApartmentBedroomFloor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentBedroomFloor.png
+
+#begin Sprites/ApartmentBedroomWall.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentBedroomWall.png
+
+#begin Sprites/ApartmentLivingRoomFloor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentLivingRoomFloor.png
+
+#begin Sprites/ApartmentLivingRoomWall.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentLivingRoomWall.png
+
