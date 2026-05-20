@@ -11,11 +11,13 @@ public sealed class GameRenderer
     private const int TileInset = 3;
     private readonly SpriteFont _font;
     private readonly Texture2D _pixel;
+    private readonly GameArt _art;
 
-    public GameRenderer(SpriteFont font, Texture2D pixel)
+    public GameRenderer(SpriteFont font, Texture2D pixel, GameArt art)
     {
         _font = font;
         _pixel = pixel;
+        _art = art;
     }
 
     public void Draw(SpriteBatch spriteBatch, GameSession session, Viewport viewport)
@@ -82,13 +84,14 @@ public sealed class GameRenderer
     private void DrawBoard(SpriteBatch spriteBatch, GameSession session)
     {
         var shake = session.ShakeOffset;
+        var useApartmentSprites = UsesApartmentSprites(session);
         foreach (var tile in session.Grid.AllTiles())
         {
-            DrawTile(spriteBatch, tile, shake);
+            DrawTile(spriteBatch, tile, shake, useApartmentSprites);
 
             if (tile.WorldObject is not null)
             {
-                DrawWorldObject(spriteBatch, tile, shake, tile.WorldObject);
+                DrawWorldObject(spriteBatch, tile, shake, tile.WorldObject, useApartmentSprites);
             }
 
             if (tile.Effect is not null)
@@ -102,12 +105,27 @@ public sealed class GameRenderer
             DrawMonster(spriteBatch, monster, shake);
         }
 
-        DrawMonster(spriteBatch, session.Player, shake);
+        DrawMonster(spriteBatch, session.Player, shake, useApartmentSprites);
     }
 
-    private void DrawTile(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    private void DrawTile(SpriteBatch spriteBatch, Tile tile, Point2 shake, bool useApartmentSprites)
     {
         var rect = TileRect(tile.Position, shake);
+        if (useApartmentSprites)
+        {
+            var texture = tile.Kind switch
+            {
+                TileKind.Floor => _art.ApartmentFloor,
+                TileKind.Wall => _art.ApartmentWall,
+                TileKind.Exit => _art.ApartmentDoor,
+                _ => _art.ApartmentFloor,
+            };
+
+            spriteBatch.Draw(texture, rect, Color.White);
+            spriteBatch.Draw(_pixel, rect, Color.Black * 0.18f);
+            return;
+        }
+
         spriteBatch.Draw(_pixel, rect, Palette.TileOutline);
         var inner = Shrink(rect, TileInset);
         spriteBatch.Draw(_pixel, inner, GetTileColor(tile));
@@ -161,8 +179,25 @@ public sealed class GameRenderer
         spriteBatch.Draw(_pixel, new Rectangle(centerX - 10, centerY - 10, 20, 20), Palette.ExitCore);
     }
 
-    private void DrawWorldObject(SpriteBatch spriteBatch, Tile tile, Point2 shake, WorldObject worldObject)
+    private void DrawWorldObject(SpriteBatch spriteBatch, Tile tile, Point2 shake, WorldObject worldObject, bool useApartmentSprites)
     {
+        if (useApartmentSprites)
+        {
+            Texture2D? sprite = worldObject.VisualKind switch
+            {
+                WorldObjectVisualKind.Bed => _art.ApartmentBed,
+                WorldObjectVisualKind.Dresser => _art.ApartmentDresser,
+                WorldObjectVisualKind.Npc => _art.ApartmentFigure,
+                _ => null,
+            };
+
+            if (sprite is not null)
+            {
+                spriteBatch.Draw(sprite, TileRect(tile.Position, shake), Color.White);
+                return;
+            }
+        }
+
         switch (worldObject.VisualKind)
         {
             case WorldObjectVisualKind.Treasure:
@@ -270,13 +305,21 @@ public sealed class GameRenderer
         }
     }
 
-    private void DrawMonster(SpriteBatch spriteBatch, MonsterActor actor, Point2 shake)
+    private void DrawMonster(SpriteBatch spriteBatch, MonsterActor actor, Point2 shake, bool useApartmentSprites = false)
     {
         var lungeOffset = GetLungeOffset(actor);
         var position = new Vector2(
             (actor.Tile.Position.X + actor.OffsetX) * Layout.TileSize + shake.X + lungeOffset.X,
             (actor.Tile.Position.Y + actor.OffsetY) * Layout.TileSize + shake.Y + lungeOffset.Y);
         var bounds = new Rectangle((int)position.X + 8, (int)position.Y + 8, Layout.TileSize - 16, Layout.TileSize - 16);
+
+        if (useApartmentSprites && actor.IsPlayer)
+        {
+            spriteBatch.Draw(_art.ApartmentFigure, new Rectangle((int)position.X, (int)position.Y, Layout.TileSize, Layout.TileSize), Color.White);
+            DrawDamageMarker(spriteBatch, actor, bounds);
+            DrawStunIndicator(spriteBatch, actor, bounds);
+            return;
+        }
 
         var color = actor.Shield > 0 ? Palette.Shield : actor.Archetype.Color;
         if (actor.TeleportCounter > 0)
@@ -514,6 +557,9 @@ public sealed class GameRenderer
         EffectKind.Dash => Palette.EffectDash,
         _ => Palette.EffectHeal,
     };
+
+    private static bool UsesApartmentSprites(GameSession session)
+        => string.Equals(session.CurrentDungeonId, "apartment-intro", StringComparison.OrdinalIgnoreCase);
 
     private void DrawDamageMarker(SpriteBatch spriteBatch, MonsterActor actor, Rectangle bounds)
     {

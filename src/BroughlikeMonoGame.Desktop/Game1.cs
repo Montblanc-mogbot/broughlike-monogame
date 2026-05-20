@@ -38,7 +38,14 @@ public sealed class Game1 : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
         _font = Content.Load<SpriteFont>("Fonts/UiFont");
-        _app = new GameApp(new GameAppDependencies(_font, _pixel));
+        var art = new GameArt(
+            Content.Load<Texture2D>("Sprites/ApartmentFloor"),
+            Content.Load<Texture2D>("Sprites/ApartmentWall"),
+            Content.Load<Texture2D>("Sprites/ApartmentDoor"),
+            Content.Load<Texture2D>("Sprites/ApartmentBed"),
+            Content.Load<Texture2D>("Sprites/ApartmentDresser"),
+            Content.Load<Texture2D>("Sprites/ApartmentFigure"));
+        _app = new GameApp(new GameAppDependencies(_font, _pixel, art));
     }
 
     protected override void Update(GameTime gameTime)

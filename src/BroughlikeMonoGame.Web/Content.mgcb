@@ -18,3 +18,33 @@
 /processor:FontDescriptionProcessor
 /build:Fonts/UiFont.spritefont
 
+#begin Sprites/ApartmentFloor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentFloor.png
+
+#begin Sprites/ApartmentWall.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentWall.png
+
+#begin Sprites/ApartmentDoor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentDoor.png
+
+#begin Sprites/ApartmentBed.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentBed.png
+
+#begin Sprites/ApartmentDresser.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentDresser.png
+
+#begin Sprites/ApartmentFigure.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Sprites/ApartmentFigure.png
+

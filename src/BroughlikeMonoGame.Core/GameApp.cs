@@ -15,7 +15,7 @@ public sealed class GameApp
         scoreStorage ??= new FileScoreStorage(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame", "scores.json"));
         _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), ItemCatalog.CreateTutorialItems(), DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
         _session.ShowTitle();
-        _renderer = new GameRenderer(dependencies.Font, dependencies.Pixel);
+        _renderer = new GameRenderer(dependencies.Font, dependencies.Pixel, dependencies.Art);
     }
 
     public void Update(InputSnapshot input)

@@ -1,0 +1,11 @@
+using Microsoft.Xna.Framework.Graphics;
+
+namespace BroughlikeMonoGame.Core;
+
+public sealed record GameArt(
+    Texture2D ApartmentFloor,
+    Texture2D ApartmentWall,
+    Texture2D ApartmentDoor,
+    Texture2D ApartmentBed,
+    Texture2D ApartmentDresser,
+    Texture2D ApartmentFigure);
