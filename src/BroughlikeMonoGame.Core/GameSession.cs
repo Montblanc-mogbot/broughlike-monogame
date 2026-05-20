@@ -185,7 +185,17 @@ public sealed class GameSession
         Inventory = new Inventory();
         if (inventoryItemIds is null)
         {
-            DrawInitialInventory(InventoryCapacity);
+            if (CurrentDungeon.SeedsRandomStartingInventory)
+            {
+                DrawInitialInventory(InventoryCapacity);
+            }
+            else
+            {
+                for (var i = 0; i < InventoryCapacity; i++)
+                {
+                    Inventory.AddSlot();
+                }
+            }
         }
         else
         {
@@ -363,6 +373,12 @@ public sealed class GameSession
         }
 
         actor.LastMove = delta;
+        if (newTile.Occupant is null && newTile.WorldObject?.BlocksMovement == true)
+        {
+            newTile.WorldObject.Interact(this, actor, newTile);
+            return actor.IsPlayer;
+        }
+
         if (newTile.Occupant is null)
         {
             actor.MoveTo(newTile);

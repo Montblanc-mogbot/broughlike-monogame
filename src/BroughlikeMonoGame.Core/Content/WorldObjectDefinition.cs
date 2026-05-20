@@ -5,6 +5,7 @@ public enum WorldObjectDefinitionKind
     Treasure,
     ItemPickup,
     Portal,
+    ScriptedInteractable,
 }
 
 public sealed record WorldObjectDefinition(
@@ -12,4 +13,9 @@ public sealed record WorldObjectDefinition(
     string? ItemId = null,
     PortalDestination? PortalDestination = null,
     string? RequiredProgressFlag = null,
-    string? GrantsProgressFlag = null);
+    string? GrantsProgressFlag = null,
+    string? DisplayName = null,
+    string? Message = null,
+    WorldObjectVisualKind VisualKind = WorldObjectVisualKind.Item,
+    bool BlocksMovement = false,
+    Point2? SpawnItemOffset = null);

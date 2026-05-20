@@ -14,7 +14,10 @@ var checks = new List<(string name, Action run)>
     ("Treasure no longer spawns score-based item rewards", CheckTreasureNoLongerSpawnsScoreItems),
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
     ("Enemy death drops configured item pickups", CheckEnemyDeathDropsConfiguredItem),
-    ("Default registry starts the game in the authored start hub", CheckDefaultRegistryStartsInHub),
+    ("Default registry starts the game in the apartment intro", CheckDefaultRegistryStartsInApartmentIntro),
+    ("Dresser interaction spawns the black suit pickup", CheckDresserSpawnsBlackSuit),
+    ("Apartment intro sends you back if you skip the black suit", CheckApartmentIntroRequiresBlackSuit),
+    ("Apartment intro advances to the next dungeon with the black suit", CheckApartmentIntroAdvancesWithBlackSuit),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
@@ -287,7 +290,7 @@ static void CheckEnemyDeathDropsConfiguredItem()
     }
 }
 
-static void CheckDefaultRegistryStartsInHub()
+static void CheckDefaultRegistryStartsInApartmentIntro()
 {
     var session = new GameSession(
         new Random(0),
@@ -299,14 +302,80 @@ static void CheckDefaultRegistryStartsInHub()
 
     session.StartGame();
 
-    if (session.CurrentDungeonId != "hub-start")
+    if (session.CurrentDungeonId != "apartment-intro")
     {
         throw new Exception($"default starting dungeon mismatch: {session.CurrentDungeonId}");
     }
 
-    if (session.Grid.GetTile(2, 1).Kind != TileKind.Exit)
+    if (session.CurrentFloorDisplayName != "Bedroom")
     {
-        throw new Exception("start hub does not place the authored dungeon door next to the player");
+        throw new Exception($"default starting floor mismatch: {session.CurrentFloorDisplayName}");
+    }
+
+    if (session.Grid.GetTile(2, 2).Kind != TileKind.Exit)
+    {
+        throw new Exception("apartment intro does not place the bedroom door next to the player");
+    }
+}
+
+static void CheckDresserSpawnsBlackSuit()
+{
+    var session = new GameSession(
+        new Random(0),
+        new AudioService(),
+        new ScoreboardService(new InMemoryScoreStorage()),
+        ItemCatalog.CreateTutorialItems(),
+        DungeonCatalog.CreateDefaultRegistry(),
+        DungeonCatalog.DefaultStartingDungeonId);
+
+    session.StartGame();
+    session.TryMovePlayer(new Point2(0, -1));
+    session.TryMovePlayer(new Point2(0, -1));
+    session.TryMovePlayer(new Point2(1, 0));
+    session.TryMovePlayer(new Point2(0, -1));
+
+    if (session.BannerMessage != "Put on your black suit")
+    {
+        throw new Exception($"dresser interaction banner mismatch: {session.BannerMessage}");
+    }
+
+    if (session.Grid.GetTile(6, 1).WorldObject is not ItemPickup pickup || pickup.Item.Id != "black-suit")
+    {
+        throw new Exception("dresser did not spawn the black suit pickup");
+    }
+}
+
+static void CheckApartmentIntroRequiresBlackSuit()
+{
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
+    session.StartGame();
+
+    Walk(session, (0, -1), (0, -1), (-1, 0), (-1, 0));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+
+    if (session.CurrentDungeonId != "apartment-intro" || session.CurrentFloorDisplayName != "Bedroom")
+    {
+        throw new Exception($"expected missing suit route to return to bedroom, got {session.CurrentDungeonId} / {session.CurrentFloorDisplayName}");
+    }
+}
+
+static void CheckApartmentIntroAdvancesWithBlackSuit()
+{
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
+    session.StartGame();
+
+    Walk(session, (0, -1), (0, -1), (1, 0), (0, -1));
+    Walk(session, (1, 0), (0, -1));
+    Walk(session, (0, 1), (-1, 0), (-1, 0), (-1, 0), (-1, 0));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+
+    if (session.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected black suit route to reach tutorial dungeon, got {session.CurrentDungeonId}");
     }
 }
 
@@ -757,6 +826,14 @@ static GameSession CreateSession(DungeonRegistry? dungeons = null, string starti
         ItemCatalog.CreateTutorialItems(),
         dungeons,
         startingDungeonId);
+}
+
+static void Walk(GameSession session, params (int x, int y)[] steps)
+{
+    foreach (var (x, y) in steps)
+    {
+        session.TryMovePlayer(new Point2(x, y));
+    }
 }
 
 static LevelGrid CreateOpenFloorGrid(int size)

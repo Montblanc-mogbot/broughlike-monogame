@@ -110,5 +110,6 @@ public static class ItemCatalog
             session.BoltTravel(new Point2(1, -1), EffectKind.Bolt, 3);
             session.BoltTravel(new Point2(1, 1), EffectKind.Bolt, 3);
         }),
+        new("black-suit", "BLACK SUIT", session => session.StartNextTurnMessage("You straighten the black suit.")),
     ];
 }

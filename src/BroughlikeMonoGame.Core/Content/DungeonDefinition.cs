@@ -7,7 +7,7 @@ public sealed class DungeonDefinition
 {
     private readonly IReadOnlyList<FloorDefinition> _floors;
 
-    public DungeonDefinition(string id, string displayName, IReadOnlyList<FloorDefinition> floors)
+    public DungeonDefinition(string id, string displayName, IReadOnlyList<FloorDefinition> floors, bool seedsRandomStartingInventory = true)
     {
         if (floors.Count == 0)
         {
@@ -16,12 +16,15 @@ public sealed class DungeonDefinition
 
         Id = id;
         DisplayName = displayName;
+        SeedsRandomStartingInventory = seedsRandomStartingInventory;
         _floors = floors;
     }
 
     public string Id { get; }
 
     public string DisplayName { get; }
+
+    public bool SeedsRandomStartingInventory { get; }
 
     public int FloorCount => _floors.Count;
 

@@ -42,6 +42,11 @@ public sealed class GameRenderer
         DrawBoard(spriteBatch, session);
         DrawSidebar(spriteBatch, session);
 
+        if (!string.IsNullOrWhiteSpace(session.BannerMessage) && session.Mode == GameMode.Running)
+        {
+            DrawMessageBox(spriteBatch, session.BannerMessage);
+        }
+
         if (session.Mode is GameMode.Dead)
         {
             DrawOverlay(spriteBatch, "You Died");
@@ -169,6 +174,15 @@ public sealed class GameRenderer
             case WorldObjectVisualKind.Portal:
                 DrawPortal(spriteBatch, tile, shake);
                 break;
+            case WorldObjectVisualKind.Npc:
+                DrawNpc(spriteBatch, tile, shake);
+                break;
+            case WorldObjectVisualKind.Bed:
+                DrawBed(spriteBatch, tile, shake);
+                break;
+            case WorldObjectVisualKind.Dresser:
+                DrawDresser(spriteBatch, tile, shake);
+                break;
         }
     }
 
@@ -197,6 +211,35 @@ public sealed class GameRenderer
         spriteBatch.Draw(_pixel, Shrink(rect, 3), Palette.ExitGlow * 0.65f);
         spriteBatch.Draw(_pixel, new Rectangle(rect.X + 6, rect.Center.Y - 4, rect.Width - 12, 8), Palette.ExitCore);
         spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 4, rect.Y + 6, 8, rect.Height - 12), Palette.ExitCore * 0.9f);
+    }
+
+    private void DrawNpc(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 12);
+        spriteBatch.Draw(_pixel, rect, Palette.ActorShadow);
+        var body = Shrink(rect, 6);
+        spriteBatch.Draw(_pixel, body, Palette.UiAccent);
+        spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 10, body.Y + 8, 20, 10), Palette.UiPrimary);
+        spriteBatch.Draw(_pixel, new Rectangle(body.Center.X - 3, body.Bottom - 14, 6, 10), Palette.ActorEyeBright);
+    }
+
+    private void DrawBed(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 10);
+        spriteBatch.Draw(_pixel, rect, Palette.ActorShadow);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 4, rect.Y + 8, rect.Width - 8, rect.Height - 12), Palette.UiMuted);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8, rect.Y + 12, rect.Width - 16, rect.Height - 20), Palette.UiPrimary * 0.8f);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8, rect.Y + 12, 12, 10), Color.White);
+    }
+
+    private void DrawDresser(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 12);
+        spriteBatch.Draw(_pixel, rect, Palette.ActorShadow);
+        spriteBatch.Draw(_pixel, Shrink(rect, 4), new Color(106, 72, 48));
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8, rect.Y + 14, rect.Width - 16, 4), Palette.UiPrimary * 0.65f);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 8, rect.Y + 28, rect.Width - 16, 4), Palette.UiPrimary * 0.65f);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 2, rect.Y + 10, 4, rect.Height - 20), Palette.TreasureHighlight);
     }
 
     private void DrawEffect(SpriteBatch spriteBatch, Tile tile, Point2 shake, TileEffect effect)
@@ -333,10 +376,16 @@ public sealed class GameRenderer
             DrawText(spriteBatch, text, new Vector2(x, 175 + i * 34), Palette.UiAccent, 0.62f);
         }
 
-        if (!string.IsNullOrWhiteSpace(session.BannerMessage) && session.Mode == GameMode.Running)
-        {
-            DrawText(spriteBatch, session.BannerMessage, new Vector2(x, Layout.ScreenHeight - 80), Palette.UiMuted, 0.5f);
-        }
+    }
+
+    private void DrawMessageBox(SpriteBatch spriteBatch, string message)
+    {
+        var width = Layout.MapTiles * Layout.TileSize - 28;
+        var height = 74;
+        var rect = new Rectangle(14, Layout.ScreenHeight - height - 14, width, height);
+        spriteBatch.Draw(_pixel, rect, Color.Black * 0.88f);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 3, rect.Y + 3, rect.Width - 6, rect.Height - 6), new Color(28, 28, 42));
+        DrawText(spriteBatch, message, new Vector2(rect.X + 14, rect.Y + 18), Palette.UiPrimary, 0.58f);
     }
 
     private void DrawOverlay(SpriteBatch spriteBatch, string title)
