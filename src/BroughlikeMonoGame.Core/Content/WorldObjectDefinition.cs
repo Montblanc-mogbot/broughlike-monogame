@@ -10,4 +10,6 @@ public enum WorldObjectDefinitionKind
 public sealed record WorldObjectDefinition(
     WorldObjectDefinitionKind Kind,
     string? ItemId = null,
-    PortalDestination? PortalDestination = null);
+    PortalDestination? PortalDestination = null,
+    string? RequiredProgressFlag = null,
+    string? GrantsProgressFlag = null);

@@ -8,4 +8,5 @@ public sealed record SaveGame(
     float PlayerHp,
     int Score,
     int InventoryCapacity,
-    IReadOnlyList<string?> InventoryItemIds);
+    IReadOnlyList<string?> InventoryItemIds,
+    IReadOnlyList<string> ProgressFlags);

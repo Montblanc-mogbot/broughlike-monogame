@@ -15,6 +15,7 @@ var checks = new List<(string name, Action run)>
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
+    ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
     ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip)
 };
 
@@ -390,6 +391,85 @@ static void CheckPortalTransitionsBetweenDungeons()
     }
 }
 
+static void CheckProgressGatedPortal()
+{
+    var hub = new DungeonDefinition(
+        "hub",
+        "Hub",
+        [
+            new FloorDefinition(
+                "hub-floor",
+                "Hub Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ],
+                    worldObjects:
+                    [
+                        new WorldObjectPlacement(
+                            new WorldObjectDefinition(
+                                WorldObjectDefinitionKind.Portal,
+                                PortalDestination: new PortalDestination("crypt", 1, "Enter the sealed crypt"),
+                                RequiredProgressFlag: "hub.crypt.unsealed"),
+                            new Point2(2, 1))
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var crypt = new DungeonDefinition(
+        "crypt",
+        "Crypt",
+        [
+            new FloorDefinition(
+                "crypt-floor-1",
+                "Crypt Floor 1",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#.......#",
+                        "#..@....#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(12, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var session = CreateSession(new DungeonRegistry([hub, crypt]), "hub");
+    session.StartGame();
+    session.TryMovePlayer(new Point2(1, 0));
+
+    if (session.CurrentDungeonId != "hub")
+    {
+        throw new Exception("locked portal should not transition dungeons");
+    }
+
+    if (session.BannerMessage != "Enter the sealed crypt is sealed.")
+    {
+        throw new Exception($"locked portal banner mismatch: {session.BannerMessage}");
+    }
+
+    session.UnlockProgressFlag("hub.crypt.unsealed");
+    session.TryMovePlayer(new Point2(-1, 0));
+    session.TryMovePlayer(new Point2(1, 0));
+
+    if (session.CurrentDungeonId != "crypt")
+    {
+        throw new Exception("unlocked portal did not transition dungeons");
+    }
+}
+
 static void CheckSaveGameRoundTrip()
 {
     var hub = new DungeonDefinition(
@@ -447,6 +527,8 @@ static void CheckSaveGameRoundTrip()
     SetProperty(session, nameof(GameSession.Score), 7);
     session.EnterDungeon("crypt", 1, playerHp: 2f, inventoryItemIds: inventory.ToItemIds());
 
+    session.UnlockProgressFlag("hub.crypt.unsealed");
+
     var save = session.CreateSaveGame();
 
     var restored = CreateSession(new DungeonRegistry([hub, crypt]), "hub");
@@ -480,6 +562,11 @@ static void CheckSaveGameRoundTrip()
     if (restored.Player.Hp != 2f)
     {
         throw new Exception($"restored player hp mismatch: {restored.Player.Hp}");
+    }
+
+    if (!restored.HasProgressFlag("hub.crypt.unsealed"))
+    {
+        throw new Exception("restored progression flag missing");
     }
 }
 

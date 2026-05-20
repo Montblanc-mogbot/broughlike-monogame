@@ -13,6 +13,7 @@ public sealed class GameSession
     private readonly DungeonRegistry _dungeons;
     private readonly string _startingDungeonId;
     private readonly List<MonsterActor> _monsters = [];
+    private readonly HashSet<string> _progressFlags = new(StringComparer.OrdinalIgnoreCase);
     private FloorDefinition? _currentFloor;
 
     public GameSession(
@@ -75,6 +76,7 @@ public sealed class GameSession
 
     public void StartGame()
     {
+        _progressFlags.Clear();
         CurrentDungeonId = _startingDungeonId;
         Level = 1;
         Score = 0;
@@ -90,10 +92,17 @@ public sealed class GameSession
             Player.Hp,
             Score,
             InventoryCapacity,
-            Inventory.ToItemIds());
+            Inventory.ToItemIds(),
+            _progressFlags.OrderBy(flag => flag, StringComparer.OrdinalIgnoreCase).ToArray());
 
     public void LoadSaveGame(SaveGame saveGame)
     {
+        _progressFlags.Clear();
+        foreach (var flag in saveGame.ProgressFlags)
+        {
+            _progressFlags.Add(flag);
+        }
+
         CurrentDungeonId = saveGame.DungeonId;
         Level = saveGame.FloorNumber;
         Score = saveGame.Score;
@@ -108,6 +117,17 @@ public sealed class GameSession
         CurrentDungeonId = dungeonId;
         Level = floorNumber;
         StartLevel(playerHp ?? Player.Hp, inventoryItemIds ?? Inventory.ToItemIds());
+    }
+
+    public bool HasProgressFlag(string flag)
+        => _progressFlags.Contains(flag);
+
+    public void UnlockProgressFlag(string flag)
+    {
+        if (!string.IsNullOrWhiteSpace(flag))
+        {
+            _progressFlags.Add(flag);
+        }
     }
 
     public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds)

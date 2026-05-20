@@ -170,6 +170,7 @@ The current codebase now has the first real extensibility foundation in place:
 - Fixed/authored floors can now load through the same `GameSession` path as procedural floors.
 - `PortalDestination` + `PortalWorldObject` now allow authored floors to transition into other dungeon definitions, which is the first real hub/gate plumbing.
 - `SaveGame` snapshots plus `GameSession.CreateSaveGame()` / `LoadSaveGame()` now preserve the active dungeon, floor, hp, score, and inventory state across sessions, which establishes the first run-state persistence boundary.
+- Progress flags now live in `GameSession` and save with `SaveGame`, and world objects can declare simple required/granted flags. That gives hub gates a first real world-state hook instead of being purely static authored geometry.
 
 This is intentionally still code-first, but the architecture boundary is now pointed in the right direction for later hand-authored content and data-file loading.
 
