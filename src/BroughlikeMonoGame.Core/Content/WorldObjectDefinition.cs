@@ -4,6 +4,10 @@ public enum WorldObjectDefinitionKind
 {
     Treasure,
     ItemPickup,
+    Portal,
 }
 
-public sealed record WorldObjectDefinition(WorldObjectDefinitionKind Kind, string? ItemId = null);
+public sealed record WorldObjectDefinition(
+    WorldObjectDefinitionKind Kind,
+    string? ItemId = null,
+    PortalDestination? PortalDestination = null);

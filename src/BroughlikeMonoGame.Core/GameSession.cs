@@ -10,17 +10,26 @@ public sealed class GameSession
     private readonly AudioService _audio;
     private readonly ScoreboardService _scoreboard;
     private readonly Dictionary<string, ItemDefinition> _itemCatalog;
-    private readonly DungeonDefinition _dungeon;
+    private readonly DungeonRegistry _dungeons;
+    private readonly string _startingDungeonId;
     private readonly List<MonsterActor> _monsters = [];
     private FloorDefinition? _currentFloor;
 
-    public GameSession(Random random, AudioService audio, ScoreboardService scoreboard, IReadOnlyList<ItemDefinition> itemCatalog, DungeonDefinition? dungeon = null)
+    public GameSession(
+        Random random,
+        AudioService audio,
+        ScoreboardService scoreboard,
+        IReadOnlyList<ItemDefinition> itemCatalog,
+        DungeonRegistry? dungeons = null,
+        string startingDungeonId = "tutorial")
     {
         _random = random;
         _audio = audio;
         _scoreboard = scoreboard;
         _itemCatalog = itemCatalog.ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase);
-        _dungeon = dungeon ?? DungeonCatalog.CreateTutorialDungeon();
+        _dungeons = dungeons ?? DungeonCatalog.CreateDefaultRegistry();
+        _startingDungeonId = startingDungeonId;
+        CurrentDungeonId = startingDungeonId;
         Scores = _scoreboard.Load();
         Mode = GameMode.Title;
         Grid = new LevelGrid(Layout.MapTiles);
@@ -37,6 +46,10 @@ public sealed class GameSession
     public List<ScoreEntry> Scores { get; private set; }
 
     public Inventory Inventory { get; private set; } = new();
+
+    public string CurrentDungeonId { get; private set; }
+
+    public DungeonDefinition CurrentDungeon => _dungeons.Get(CurrentDungeonId);
 
     public int Level { get; private set; } = 1;
 
@@ -62,6 +75,7 @@ public sealed class GameSession
 
     public void StartGame()
     {
+        CurrentDungeonId = _startingDungeonId;
         Level = 1;
         Score = 0;
         InventoryCapacity = GameConstants.InitialSpellCount;
@@ -69,9 +83,16 @@ public sealed class GameSession
         Mode = GameMode.Running;
     }
 
+    public void EnterDungeon(string dungeonId, int floorNumber, float? playerHp = null, IReadOnlyList<string?>? inventoryItemIds = null)
+    {
+        CurrentDungeonId = dungeonId;
+        Level = floorNumber;
+        StartLevel(playerHp ?? Player.Hp, inventoryItemIds ?? Inventory.ToItemIds());
+    }
+
     public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds)
     {
-        _currentFloor = _dungeon.GetFloor(Level);
+        _currentFloor = CurrentDungeon.GetFloor(Level);
         SpawnRate = _currentFloor.SpawnProfile.InitialSpawnRate;
         SpawnCounter = SpawnRate;
 
@@ -326,7 +347,7 @@ public sealed class GameSession
 
     private void SpawnMonster()
     {
-        var spawnProfile = _currentFloor?.SpawnProfile ?? _dungeon.GetFloor(Math.Clamp(Level, 1, _dungeon.FloorCount)).SpawnProfile;
+        var spawnProfile = _currentFloor?.SpawnProfile ?? CurrentDungeon.GetFloor(Math.Clamp(Level, 1, CurrentDungeon.FloorCount)).SpawnProfile;
         var archetype = MonsterCatalog.Get(spawnProfile.PickRandomMonster(_random));
         var monster = new MonsterActor(archetype, Grid.GetRandomPassableTile(_random, tile => tile.WorldObject is null && tile != Player.Tile));
         _monsters.Add(monster);
@@ -406,11 +427,16 @@ public sealed class GameSession
         var tile = actor.Tile;
         tile.WorldObject?.Interact(this, actor, tile);
 
+        if (!ReferenceEquals(actor, Player) || !ReferenceEquals(Player.Tile, tile))
+        {
+            return;
+        }
+
         switch (tile.Kind)
         {
             case TileKind.Exit when actor.IsPlayer:
                 _audio.Play("newLevel");
-                if (Level == _dungeon.FloorCount)
+                if (Level == CurrentDungeon.FloorCount)
                 {
                     WinRun();
                 }

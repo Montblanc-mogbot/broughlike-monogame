@@ -4,6 +4,9 @@ namespace BroughlikeMonoGame.Core;
 
 public static class DungeonCatalog
 {
+    public static DungeonRegistry CreateDefaultRegistry()
+        => new([CreateTutorialDungeon()]);
+
     public static DungeonDefinition CreateTutorialDungeon()
     {
         var spawnProfile = new SpawnProfile(

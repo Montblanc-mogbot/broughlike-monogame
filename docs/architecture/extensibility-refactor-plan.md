@@ -163,17 +163,19 @@ Need to support:
 ## Landed foundation
 The current codebase now has the first real extensibility foundation in place:
 - `DungeonDefinition` + `FloorDefinition` describe a run as explicit floors instead of hardcoding everything inside `GameSession`.
+- `DungeonRegistry` lets a session know about multiple dungeon definitions instead of a single tutorial run.
 - `SpawnProfile` holds per-floor monster tables plus initial spawn/treasure cadence data.
 - `ILevelSource` provides a shared runtime path for both `ProceduralLevelSource` and `FixedLevelSource`.
 - `LevelPlan` separates layout/content planning from live runtime actors.
 - Fixed/authored floors can now load through the same `GameSession` path as procedural floors.
+- `PortalDestination` + `PortalWorldObject` now allow authored floors to transition into other dungeon definitions, which is the first real hub/gate plumbing.
 
 This is intentionally still code-first, but the architecture boundary is now pointed in the right direction for later hand-authored content and data-file loading.
 
 ## Near-term coding recommendation
 The next useful refactor steps are:
-1. replace hardcoded tutorial dungeon construction with a more explicit content catalog/layout folder structure,
-2. introduce portal/hub world-object definitions that point at dungeon descriptors,
+1. replace hardcoded tutorial/hub dungeon construction with a more explicit content catalog/layout folder structure,
+2. define richer hub-specific interactables/NPC props on top of the world-object layer,
 3. add progression/save-state models that can choose authored hub floors vs active dungeon runs.
 
 That keeps the current gameplay stable while moving toward the hub + portal + authored-content shape.

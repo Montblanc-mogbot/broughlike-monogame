@@ -13,7 +13,8 @@ var checks = new List<(string name, Action run)>
     ("UseItem consumes slot and applies effect", CheckUseItemConsumesSlot),
     ("Treasure threshold spawns pickup instead of granting item directly", CheckTreasureThresholdSpawnsPickup),
     ("Player stepping on item pickup stores item", CheckItemPickupStoresItem),
-    ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads)
+    ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
+    ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons)
 };
 
 foreach (var (name, run) in checks)
@@ -285,7 +286,7 @@ static void CheckFixedFloorDefinitionLoads()
                 new SpawnProfile(10, 1, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
         ]);
 
-    var session = CreateSession(dungeon);
+    var session = CreateSession(new DungeonRegistry([dungeon]), "test-dungeon");
     session.StartGame();
 
     if (session.Player.Tile.Position != new Point2(1, 1))
@@ -309,14 +310,94 @@ static void CheckFixedFloorDefinitionLoads()
     }
 }
 
-static GameSession CreateSession(DungeonDefinition? dungeon = null)
+static void CheckPortalTransitionsBetweenDungeons()
+{
+    var hub = new DungeonDefinition(
+        "hub",
+        "Hub",
+        [
+            new FloorDefinition(
+                "hub-floor",
+                "Hub Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ],
+                    worldObjects:
+                    [
+                        new WorldObjectPlacement(
+                            new WorldObjectDefinition(
+                                WorldObjectDefinitionKind.Portal,
+                                PortalDestination: new PortalDestination("crypt", 1, "Enter the crypt")),
+                            new Point2(2, 1))
+                    ]),
+                new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var crypt = new DungeonDefinition(
+        "crypt",
+        "Crypt",
+        [
+            new FloorDefinition(
+                "crypt-floor-1",
+                "Crypt Floor 1",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#.......#",
+                        "#..@....#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########"
+                    ]),
+                new SpawnProfile(12, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]))
+        ]);
+
+    var session = CreateSession(new DungeonRegistry([hub, crypt]), "hub");
+    session.StartGame();
+    session.TryMovePlayer(new Point2(1, 0));
+
+    if (session.CurrentDungeonId != "crypt")
+    {
+        throw new Exception($"portal did not change current dungeon: {session.CurrentDungeonId}");
+    }
+
+    if (session.Level != 1)
+    {
+        throw new Exception($"portal did not set target floor: {session.Level}");
+    }
+
+    if (session.Player.Tile.Position != new Point2(3, 2))
+    {
+        throw new Exception($"portal destination player start mismatch: {session.Player.Tile.Position}");
+    }
+
+    if (session.BannerMessage != "Enter the crypt")
+    {
+        throw new Exception($"portal did not set entry banner: {session.BannerMessage}");
+    }
+}
+
+static GameSession CreateSession(DungeonRegistry? dungeons = null, string startingDungeonId = "tutorial")
 {
     return new GameSession(
         new Random(0),
         new AudioService(),
         new ScoreboardService(new InMemoryScoreStorage()),
         ItemCatalog.CreateTutorialItems(),
-        dungeon);
+        dungeons,
+        startingDungeonId);
 }
 
 static LevelGrid CreateOpenFloorGrid(int size)

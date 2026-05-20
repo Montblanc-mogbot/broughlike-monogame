@@ -166,6 +166,9 @@ public sealed class GameRenderer
             case WorldObjectVisualKind.Item:
                 DrawItemPickup(spriteBatch, tile, shake);
                 break;
+            case WorldObjectVisualKind.Portal:
+                DrawPortal(spriteBatch, tile, shake);
+                break;
         }
     }
 
@@ -185,6 +188,15 @@ public sealed class GameRenderer
         spriteBatch.Draw(_pixel, Shrink(rect, 4), Palette.UiAccent);
         spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 3, rect.Y + 2, 6, rect.Height - 4), Palette.UiPrimary);
         spriteBatch.Draw(_pixel, new Rectangle(rect.X + 2, rect.Center.Y - 3, rect.Width - 4, 6), Palette.UiPrimary * 0.9f);
+    }
+
+    private void DrawPortal(SpriteBatch spriteBatch, Tile tile, Point2 shake)
+    {
+        var rect = Shrink(TileRect(tile.Position, shake), 12);
+        spriteBatch.Draw(_pixel, rect, Palette.ActorShadow);
+        spriteBatch.Draw(_pixel, Shrink(rect, 3), Palette.ExitGlow * 0.65f);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.X + 6, rect.Center.Y - 4, rect.Width - 12, 8), Palette.ExitCore);
+        spriteBatch.Draw(_pixel, new Rectangle(rect.Center.X - 4, rect.Y + 6, 8, rect.Height - 12), Palette.ExitCore * 0.9f);
     }
 
     private void DrawEffect(SpriteBatch spriteBatch, Tile tile, Point2 shake, TileEffect effect)

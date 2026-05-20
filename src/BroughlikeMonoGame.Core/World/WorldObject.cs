@@ -20,4 +20,5 @@ public enum WorldObjectVisualKind
 {
     Treasure,
     Item,
+    Portal,
 }
