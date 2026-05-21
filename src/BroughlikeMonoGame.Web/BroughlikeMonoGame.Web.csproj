@@ -28,7 +28,23 @@
   </ItemGroup>
 
   <Target Name="CopyGameContentIntoWwwroot" AfterTargets="Publish">
-    <MakeDir Directories="$(PublishDir)wwwroot/Fonts" />
-    <Copy SourceFiles="$(PublishDir)Fonts/UiFont.xnb" DestinationFiles="$(PublishDir)wwwroot/Fonts/UiFont.xnb" SkipUnchangedFiles="true" Condition="Exists('$(PublishDir)Fonts/UiFont.xnb')" />
+    <ItemGroup>
+      <PublishedFontContent Include="$(PublishDir)Fonts/**/*.xnb" />
+      <PublishedSpriteContent Include="$(PublishDir)Sprites/**/*.xnb" />
+      <PublishedContentAssets Include="$(PublishDir)Content.assets/**/*.xnb" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(PublishedFontContent)"
+      DestinationFiles="@(PublishedFontContent->'$(PublishDir)wwwroot/Fonts/%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(PublishedSpriteContent)"
+      DestinationFiles="@(PublishedSpriteContent->'$(PublishDir)wwwroot/Sprites/%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(PublishedContentAssets)"
+      DestinationFiles="@(PublishedContentAssets->'$(PublishDir)wwwroot/Content.assets/%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
   </Target>
 </Project>
