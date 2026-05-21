@@ -13,9 +13,13 @@ public sealed class GameApp
 
     public GameApp(GameAppDependencies dependencies, IScoreStorage? scoreStorage = null, ISaveStorage? saveStorage = null)
     {
-        var appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame");
-        scoreStorage ??= new FileScoreStorage(Path.Combine(appDataDirectory, "scores.json"));
-        saveStorage ??= new FileSaveStorage(Path.Combine(appDataDirectory, "savegame.json"));
+        if (scoreStorage is null || saveStorage is null)
+        {
+            var appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame");
+            scoreStorage ??= new FileScoreStorage(Path.Combine(appDataDirectory, "scores.json"));
+            saveStorage ??= new FileSaveStorage(Path.Combine(appDataDirectory, "savegame.json"));
+        }
+
         _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), ItemCatalog.CreateTutorialItems(), DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
         _runStatePersistence = new RunStatePersistence(new SaveGameService(saveStorage));
         _runStatePersistence.Initialize(_session);
