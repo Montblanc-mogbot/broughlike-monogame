@@ -73,7 +73,7 @@ internal sealed class BrowserGameHost : Game
             Content.Load<Texture2D>("Sprites/ApartmentHallwayWall"),
             Content.Load<Texture2D>("Sprites/ApartmentBurstnerFloor"),
             Content.Load<Texture2D>("Sprites/ApartmentBurstnerWall"));
-        _app = new GameApp(new GameAppDependencies(_font, _pixel, art), new BrowserScoreStorage());
+        _app = new GameApp(new GameAppDependencies(_font, _pixel, art), new BrowserScoreStorage(), new BrowserSaveStorage());
     }
 
     protected override void Update(GameTime gameTime)

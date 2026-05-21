@@ -9,12 +9,16 @@ public sealed class GameApp
 {
     private readonly GameSession _session;
     private readonly GameRenderer _renderer;
+    private readonly RunStatePersistence _runStatePersistence;
 
-    public GameApp(GameAppDependencies dependencies, IScoreStorage? scoreStorage = null)
+    public GameApp(GameAppDependencies dependencies, IScoreStorage? scoreStorage = null, ISaveStorage? saveStorage = null)
     {
-        scoreStorage ??= new FileScoreStorage(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame", "scores.json"));
+        var appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame");
+        scoreStorage ??= new FileScoreStorage(Path.Combine(appDataDirectory, "scores.json"));
+        saveStorage ??= new FileSaveStorage(Path.Combine(appDataDirectory, "savegame.json"));
         _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), ItemCatalog.CreateTutorialItems(), DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
-        _session.ShowTitle();
+        _runStatePersistence = new RunStatePersistence(new SaveGameService(saveStorage));
+        _runStatePersistence.Initialize(_session);
         _renderer = new GameRenderer(dependencies.Font, dependencies.Pixel, dependencies.Art);
     }
 
@@ -34,11 +38,14 @@ public sealed class GameApp
                 {
                     _session.StartGame();
                 }
+
+                _runStatePersistence.Sync(_session);
             }
 
             return;
         }
 
+        var handledInput = false;
         Point2? move = null;
         if (input.IsNewKeyPress(Keys.W) || input.IsNewKeyPress(Keys.Up))
         {
@@ -60,6 +67,7 @@ public sealed class GameApp
         if (move is { } delta)
         {
             _session.TryMovePlayer(delta);
+            handledInput = true;
         }
 
         for (var i = 0; i < 9; i++)
@@ -68,7 +76,13 @@ public sealed class GameApp
             if (input.IsNewKeyPress(key) || input.IsNewKeyPress(Keys.NumPad1 + i))
             {
                 _session.UseItem(i);
+                handledInput = true;
             }
+        }
+
+        if (handledInput)
+        {
+            _runStatePersistence.Sync(_session);
         }
     }
 

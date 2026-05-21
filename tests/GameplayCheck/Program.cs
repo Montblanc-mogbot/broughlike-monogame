@@ -22,7 +22,10 @@ var checks = new List<(string name, Action run)>
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
     ("Dungeon exits can route to different hubs based on inventory outcomes", CheckConditionalExitRouting),
-    ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip)
+    ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip),
+    ("Run-state persistence shows the title when no save exists", CheckRunStatePersistenceWithoutSave),
+    ("Run-state persistence resumes a saved dungeon on boot", CheckRunStatePersistenceLoadsSavedRun),
+    ("Run-state persistence clears saves when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns)
 };
 
 foreach (var (name, run) in checks)
@@ -717,6 +720,73 @@ static void CheckConditionalExitRouting()
     }
 }
 
+static void CheckRunStatePersistenceWithoutSave()
+{
+    var storage = new InMemorySaveStorage();
+    var persistence = new RunStatePersistence(new SaveGameService(storage));
+    var session = CreateSession();
+
+    persistence.Initialize(session);
+
+    if (session.Mode != GameMode.Title)
+    {
+        throw new Exception($"expected title mode without a save, got {session.Mode}");
+    }
+}
+
+static void CheckRunStatePersistenceLoadsSavedRun()
+{
+    var storage = new InMemorySaveStorage();
+    var service = new SaveGameService(storage);
+    var persistence = new RunStatePersistence(service);
+    var seeded = CreateSession();
+    seeded.StartGame();
+    seeded.EnterDungeon("tutorial", 1, playerHp: 2f, inventoryItemIds: seeded.Inventory.ToItemIds());
+    seeded.UnlockProgressFlag("apartment.intro.complete");
+    service.Save(seeded.CreateSaveGame());
+
+    var resumed = CreateSession();
+    persistence.Initialize(resumed);
+
+    if (resumed.Mode != GameMode.Running)
+    {
+        throw new Exception($"expected resumed session to be running, got {resumed.Mode}");
+    }
+
+    if (resumed.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected tutorial resume, got {resumed.CurrentDungeonId}");
+    }
+
+    if (!resumed.HasProgressFlag("apartment.intro.complete"))
+    {
+        throw new Exception("expected progress flag to survive boot resume");
+    }
+}
+
+static void CheckRunStatePersistenceClearsInactiveRuns()
+{
+    var storage = new InMemorySaveStorage();
+    var service = new SaveGameService(storage);
+    var persistence = new RunStatePersistence(service);
+    var session = CreateSession();
+    session.StartGame();
+    persistence.Sync(session);
+
+    if (!storage.Exists())
+    {
+        throw new Exception("expected running session to persist a save");
+    }
+
+    session.ShowTitle();
+    persistence.Sync(session);
+
+    if (storage.Exists())
+    {
+        throw new Exception("expected title-state sync to clear the save");
+    }
+}
+
 static void CheckSaveGameRoundTrip()
 {
     var hub = new DungeonDefinition(
@@ -861,6 +931,19 @@ static void SetProperty<T>(object target, string name, T value)
 {
     var prop = target.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
     prop.SetValue(target, value);
+}
+
+sealed class InMemorySaveStorage : ISaveStorage
+{
+    private string? _content;
+
+    public bool Exists() => !string.IsNullOrWhiteSpace(_content);
+
+    public string? ReadAllText() => _content;
+
+    public void WriteAllText(string content) => _content = content;
+
+    public void Delete() => _content = null;
 }
 
 sealed class InMemoryScoreStorage : IScoreStorage
