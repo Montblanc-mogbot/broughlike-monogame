@@ -191,7 +191,7 @@ public static class ApartmentIntroDefinition
                 new SpawnProfile(999, 0, 0, [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)]),
                 new ExitDefinition(
                 [
-                    new ExitRoute(new PortalDestination("tutorial", 1, null), RequiredItemId: "black-suit", SetsCurrentStart: true),
+                    new ExitRoute(new PortalDestination("hub-start", 1, null), RequiredItemId: "black-suit", SetsCurrentStart: true),
                     new ExitRoute(new PortalDestination("apartment-intro", 1, null), Label: "Something about you is not yet in order.")
                 ]))
         ];

@@ -18,6 +18,7 @@ var checks = new List<(string name, Action run)>
     ("Dresser interaction spawns the black suit pickup", CheckDresserSpawnsBlackSuit),
     ("Apartment intro sends you back if you skip the black suit", CheckApartmentIntroRequiresBlackSuit),
     ("Apartment intro advances to the next dungeon with the black suit", CheckApartmentIntroAdvancesWithBlackSuit),
+    ("Post-apartment hub routes into the tutorial dungeon", CheckHubStartRoutesIntoTutorial),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
@@ -381,9 +382,27 @@ static void CheckApartmentIntroAdvancesWithBlackSuit()
     Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
 
+    if (session.CurrentDungeonId != "hub-start")
+    {
+        throw new Exception($"expected black suit route to reach post-apartment hub, got {session.CurrentDungeonId}");
+    }
+}
+
+static void CheckHubStartRoutesIntoTutorial()
+{
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), "hub-start");
+    session.StartGame();
+
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+
     if (session.CurrentDungeonId != "tutorial")
     {
-        throw new Exception($"expected black suit route to reach tutorial dungeon, got {session.CurrentDungeonId}");
+        throw new Exception($"expected post-apartment hub exit to route into tutorial, got {session.CurrentDungeonId}");
+    }
+
+    if (session.BannerMessage != "Descend into the offices")
+    {
+        throw new Exception($"unexpected hub-start exit banner: {session.BannerMessage}");
     }
 }
 
@@ -926,7 +945,7 @@ static void CheckApartmentIntroUpdatesCurrentStart()
     var storage = new InMemorySaveStorage();
     var service = new WorldStateService(storage);
     var persistence = new RunStatePersistence(service);
-    var session = CreateSession();
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
     persistence.Initialize(session);
     session.StartGame();
 
@@ -938,9 +957,9 @@ static void CheckApartmentIntroUpdatesCurrentStart()
     Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0));
     Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
 
-    if (session.CurrentDungeonId != "tutorial")
+    if (session.CurrentDungeonId != "hub-start")
     {
-        throw new Exception($"expected apartment success route to enter tutorial, got {session.CurrentDungeonId}");
+        throw new Exception($"expected apartment success route to enter the post-apartment hub, got {session.CurrentDungeonId}");
     }
 
     persistence.Sync(session);
@@ -948,9 +967,9 @@ static void CheckApartmentIntroUpdatesCurrentStart()
     persistence.Sync(session);
 
     var worldState = service.Load() ?? throw new Exception("expected world state after apartment progression");
-    if (worldState.CurrentStart.DungeonId != "tutorial")
+    if (worldState.CurrentStart.DungeonId != "hub-start")
     {
-        throw new Exception($"expected apartment completion to set currentStart to tutorial, got {worldState.CurrentStart.DungeonId}");
+        throw new Exception($"expected apartment completion to set currentStart to hub-start, got {worldState.CurrentStart.DungeonId}");
     }
 }
 
