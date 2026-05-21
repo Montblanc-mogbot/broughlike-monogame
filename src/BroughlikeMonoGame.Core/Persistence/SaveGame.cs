@@ -6,6 +6,7 @@ public sealed record SaveGame(
     string DungeonId,
     int FloorNumber,
     float PlayerHp,
+    float PlayerMaxHp,
     int Score,
     int InventoryCapacity,
     IReadOnlyList<string?> InventoryItemIds,

@@ -14,6 +14,12 @@ public sealed class GameSession
     private readonly string _startingDungeonId;
     private readonly List<MonsterActor> _monsters = [];
     private readonly HashSet<string> _progressFlags = new(StringComparer.OrdinalIgnoreCase);
+    private string _titleStartDungeonId;
+    private int _titleStartFloor = 1;
+    private float _titleStartPlayerHp = GameConstants.StartingHp;
+    private float _titleStartPlayerMaxHp = MonsterCatalog.Player.MaxHp;
+    private IReadOnlyList<string?>? _titleStartInventoryItemIds;
+    private IReadOnlyList<string?> _stashItemIds = [];
     private FloorDefinition? _currentFloor;
 
     public GameSession(
@@ -30,6 +36,7 @@ public sealed class GameSession
         _itemCatalog = itemCatalog.ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase);
         _dungeons = dungeons ?? DungeonCatalog.CreateDefaultRegistry();
         _startingDungeonId = startingDungeonId;
+        _titleStartDungeonId = startingDungeonId;
         CurrentDungeonId = startingDungeonId;
         Scores = _scoreboard.Load();
         Mode = GameMode.Title;
@@ -49,6 +56,8 @@ public sealed class GameSession
     public Inventory Inventory { get; private set; } = new();
 
     public string CurrentDungeonId { get; private set; }
+
+    public string StartingDungeonId => _startingDungeonId;
 
     public DungeonDefinition CurrentDungeon => _dungeons.Get(CurrentDungeonId);
 
@@ -78,12 +87,11 @@ public sealed class GameSession
 
     public void StartGame()
     {
-        _progressFlags.Clear();
-        CurrentDungeonId = _startingDungeonId;
-        Level = 1;
+        CurrentDungeonId = _titleStartDungeonId;
+        Level = _titleStartFloor;
         Score = 0;
-        InventoryCapacity = GameConstants.InitialSpellCount;
-        StartLevel(GameConstants.StartingHp, null);
+        InventoryCapacity = _titleStartInventoryItemIds?.Count ?? GameConstants.InitialSpellCount;
+        StartLevel(_titleStartPlayerHp, _titleStartInventoryItemIds, _titleStartPlayerMaxHp);
         Mode = GameMode.Running;
         BannerMessage = null;
     }
@@ -93,6 +101,7 @@ public sealed class GameSession
             CurrentDungeonId,
             Level,
             Player.Hp,
+            Player.MaxHp,
             Score,
             InventoryCapacity,
             Inventory.ToItemIds(),
@@ -110,16 +119,38 @@ public sealed class GameSession
         Level = saveGame.FloorNumber;
         Score = saveGame.Score;
         InventoryCapacity = saveGame.InventoryCapacity;
-        StartLevel(saveGame.PlayerHp, saveGame.InventoryItemIds);
+        StartLevel(saveGame.PlayerHp, saveGame.InventoryItemIds, saveGame.PlayerMaxHp);
         Mode = GameMode.Running;
         BannerMessage = $"Resumed {CurrentDungeon.DisplayName}";
+    }
+
+    public void LoadWorldState(WorldState worldState)
+    {
+        _titleStartDungeonId = worldState.CurrentStart.DungeonId;
+        _titleStartFloor = worldState.CurrentStart.FloorNumber;
+        _titleStartPlayerHp = worldState.Player.CurrentHp;
+        _titleStartPlayerMaxHp = worldState.Player.MaxHp;
+        _titleStartInventoryItemIds = worldState.Player.InventoryItemIds.ToArray();
+        _stashItemIds = worldState.StashItemIds.ToArray();
+
+        _progressFlags.Clear();
+        foreach (var flag in worldState.StoryFlags.Where(entry => entry.Value).Select(entry => entry.Key))
+        {
+            _progressFlags.Add(flag);
+        }
+
+        CurrentDungeonId = _titleStartDungeonId;
+        Level = _titleStartFloor;
+        InventoryCapacity = _titleStartInventoryItemIds.Count;
+        Mode = GameMode.Title;
+        BannerMessage = "Press any movement key to begin";
     }
 
     public void EnterDungeon(string dungeonId, int floorNumber, float? playerHp = null, IReadOnlyList<string?>? inventoryItemIds = null)
     {
         CurrentDungeonId = dungeonId;
         Level = floorNumber;
-        StartLevel(playerHp ?? Player.Hp, inventoryItemIds ?? Inventory.ToItemIds());
+        StartLevel(playerHp ?? Player.Hp, inventoryItemIds ?? Inventory.ToItemIds(), Player.MaxHp);
     }
 
     public bool EvaluateExitRoute(ExitRoute route)
@@ -156,7 +187,7 @@ public sealed class GameSession
         }
     }
 
-    public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds)
+    public void StartLevel(float playerHp, IReadOnlyList<string?>? inventoryItemIds, float playerMaxHp)
     {
         _currentFloor = CurrentDungeon.GetFloor(Level);
         SpawnRate = _currentFloor.SpawnProfile.InitialSpawnRate;
@@ -182,6 +213,7 @@ public sealed class GameSession
         }
 
         Player = new MonsterActor(MonsterCatalog.Player, Grid.GetTile(plan.PlayerStart.X, plan.PlayerStart.Y), isPlayer: true);
+        Player.SetMaxHp(playerMaxHp);
         Player.Heal(playerHp - Player.Hp);
         Inventory = new Inventory();
         if (inventoryItemIds is null)
@@ -519,7 +551,7 @@ public sealed class GameSession
                 else
                 {
                     Level++;
-                    StartLevel(Math.Min(GameConstants.MaxHp, Player.Hp + 1), Inventory.ToItemIds());
+                    StartLevel(Math.Min(Player.MaxHp, Player.Hp + 1), Inventory.ToItemIds(), Player.MaxHp);
                 }
                 break;
         }

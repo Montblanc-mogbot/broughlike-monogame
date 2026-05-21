@@ -29,7 +29,7 @@ public sealed class MonsterActor
 
     public WorldObjectDefinition? DeathDrop { get; }
 
-    public float MaxHp { get; }
+    public float MaxHp { get; private set; }
 
     public float Hp { get; private set; }
 
@@ -67,7 +67,13 @@ public sealed class MonsterActor
 
     public void Heal(float amount)
     {
-        Hp = MathF.Min(GameConstants.MaxHp, Hp + amount);
+        Hp = MathF.Min(MaxHp, Hp + amount);
+    }
+
+    public void SetMaxHp(float maxHp)
+    {
+        MaxHp = maxHp;
+        Hp = MathF.Min(Hp, MaxHp);
     }
 
     public void TickAnimation()

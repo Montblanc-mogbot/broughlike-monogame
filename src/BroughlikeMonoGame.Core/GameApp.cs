@@ -17,11 +17,11 @@ public sealed class GameApp
         {
             var appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BroughlikeMonoGame");
             scoreStorage ??= new FileScoreStorage(Path.Combine(appDataDirectory, "scores.json"));
-            saveStorage ??= new FileSaveStorage(Path.Combine(appDataDirectory, "savegame.json"));
+            saveStorage ??= new FileSaveStorage(Path.Combine(appDataDirectory, "worldstate.json"));
         }
 
         _session = new GameSession(new Random(), new AudioService(), new ScoreboardService(scoreStorage), ItemCatalog.CreateTutorialItems(), DungeonCatalog.CreateDefaultRegistry(), DungeonCatalog.DefaultStartingDungeonId);
-        _runStatePersistence = new RunStatePersistence(new SaveGameService(saveStorage));
+        _runStatePersistence = new RunStatePersistence(new WorldStateService(saveStorage));
         _runStatePersistence.Initialize(_session);
         _renderer = new GameRenderer(dependencies.Font, dependencies.Pixel, dependencies.Art);
     }

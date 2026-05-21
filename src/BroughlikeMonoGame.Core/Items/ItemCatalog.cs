@@ -28,7 +28,7 @@ public static class ItemCatalog
                 session.TeleportActor(monster, session.GetRandomPassableTile(), 2);
             }
         }),
-        new("mulligan", "MULLIGAN", session => session.StartLevel(1, session.Inventory.ToItemIds())),
+        new("mulligan", "MULLIGAN", session => session.StartLevel(1, session.Inventory.ToItemIds(), session.Player.MaxHp)),
         new("aura", "AURA", session =>
         {
             foreach (var tile in session.Player.Tile.GetAdjacentNeighbors(session.Grid))

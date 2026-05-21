@@ -23,9 +23,10 @@ var checks = new List<(string name, Action run)>
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
     ("Dungeon exits can route to different hubs based on inventory outcomes", CheckConditionalExitRouting),
     ("SaveGame snapshots can restore run state across dungeons", CheckSaveGameRoundTrip),
-    ("Run-state persistence shows the title when no save exists", CheckRunStatePersistenceWithoutSave),
-    ("Run-state persistence resumes a saved dungeon on boot", CheckRunStatePersistenceLoadsSavedRun),
-    ("Run-state persistence clears saves when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns)
+    ("World-state persistence shows the title when no save exists", CheckRunStatePersistenceWithoutSave),
+    ("World-state persistence resumes an active run on boot", CheckRunStatePersistenceLoadsSavedRun),
+    ("World-state persistence starts from currentStart when no active run exists", CheckWorldStateStartsFromCurrentStart),
+    ("World-state persistence keeps the file and clears only activeRun when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns)
 };
 
 foreach (var (name, run) in checks)
@@ -723,7 +724,7 @@ static void CheckConditionalExitRouting()
 static void CheckRunStatePersistenceWithoutSave()
 {
     var storage = new InMemorySaveStorage();
-    var persistence = new RunStatePersistence(new SaveGameService(storage));
+    var persistence = new RunStatePersistence(new WorldStateService(storage));
     var session = CreateSession();
 
     persistence.Initialize(session);
@@ -737,13 +738,13 @@ static void CheckRunStatePersistenceWithoutSave()
 static void CheckRunStatePersistenceLoadsSavedRun()
 {
     var storage = new InMemorySaveStorage();
-    var service = new SaveGameService(storage);
+    var service = new WorldStateService(storage);
     var persistence = new RunStatePersistence(service);
-    var seeded = CreateSession();
-    seeded.StartGame();
-    seeded.EnterDungeon("tutorial", 1, playerHp: 2f, inventoryItemIds: seeded.Inventory.ToItemIds());
-    seeded.UnlockProgressFlag("apartment.intro.complete");
-    service.Save(seeded.CreateSaveGame());
+    var worldState = WorldState.CreateDefault("slot-1", "apartment-intro") with
+    {
+        ActiveRun = new SaveGame("tutorial", 1, 2f, 5f, 0, 3, ["power", null, null], ["apartment.intro.complete"])
+    };
+    service.Save(worldState);
 
     var resumed = CreateSession();
     persistence.Initialize(resumed);
@@ -764,26 +765,86 @@ static void CheckRunStatePersistenceLoadsSavedRun()
     }
 }
 
+static void CheckWorldStateStartsFromCurrentStart()
+{
+    var storage = new InMemorySaveStorage();
+    var service = new WorldStateService(storage);
+    var persistence = new RunStatePersistence(service);
+    var worldState = new WorldState(
+        "slot-1",
+        new WorldStartState("tutorial", 1),
+        new WorldPlayerState(4f, 5f, ["power", null, null]),
+        new Dictionary<string, bool> { ["met_painter"] = false, ["apartment.intro.complete"] = true },
+        null,
+        ["black-suit"],
+        ["apartment-intro", "tutorial"],
+        "apartment-intro");
+    service.Save(worldState);
+
+    var session = CreateSession();
+    persistence.Initialize(session);
+
+    if (session.Mode != GameMode.Title)
+    {
+        throw new Exception($"expected title mode before starting, got {session.Mode}");
+    }
+
+    session.StartGame();
+
+    if (session.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected StartGame to use world-state currentStart, got {session.CurrentDungeonId}");
+    }
+
+    if (session.Player.Hp != 4f)
+    {
+        throw new Exception($"expected world-state hp 4, got {session.Player.Hp}");
+    }
+
+    if (session.Player.MaxHp != 5f)
+    {
+        throw new Exception($"expected world-state max hp 5, got {session.Player.MaxHp}");
+    }
+
+    if (session.Inventory.GetItem(0)?.Id != "power")
+    {
+        throw new Exception("expected world-state inventory to seed the start state");
+    }
+
+    if (!session.HasProgressFlag("apartment.intro.complete"))
+    {
+        throw new Exception("expected true story flags to load into session state");
+    }
+
+    if (session.HasProgressFlag("met_painter"))
+    {
+        throw new Exception("false story flags should not load as unlocked progress flags");
+    }
+}
+
 static void CheckRunStatePersistenceClearsInactiveRuns()
 {
     var storage = new InMemorySaveStorage();
-    var service = new SaveGameService(storage);
+    var service = new WorldStateService(storage);
     var persistence = new RunStatePersistence(service);
     var session = CreateSession();
+    persistence.Initialize(session);
     session.StartGame();
     persistence.Sync(session);
 
-    if (!storage.Exists())
+    var runningState = service.Load() ?? throw new Exception("expected world state after running sync");
+    if (runningState.ActiveRun is null)
     {
-        throw new Exception("expected running session to persist a save");
+        throw new Exception("expected running session to persist an activeRun");
     }
 
     session.ShowTitle();
     persistence.Sync(session);
 
-    if (storage.Exists())
+    var titleState = service.Load() ?? throw new Exception("expected world state file to remain after title sync");
+    if (titleState.ActiveRun is not null)
     {
-        throw new Exception("expected title-state sync to clear the save");
+        throw new Exception("expected title-state sync to clear only the activeRun");
     }
 }
 
