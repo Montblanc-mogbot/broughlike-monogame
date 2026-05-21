@@ -50,7 +50,11 @@ public sealed class Game1 : Game
             Content.Load<Texture2D>("Sprites/ApartmentBedroomFloor"),
             Content.Load<Texture2D>("Sprites/ApartmentBedroomWall"),
             Content.Load<Texture2D>("Sprites/ApartmentLivingRoomFloor"),
-            Content.Load<Texture2D>("Sprites/ApartmentLivingRoomWall"));
+            Content.Load<Texture2D>("Sprites/ApartmentLivingRoomWall"),
+            Content.Load<Texture2D>("Sprites/ApartmentHallwayFloor"),
+            Content.Load<Texture2D>("Sprites/ApartmentHallwayWall"),
+            Content.Load<Texture2D>("Sprites/ApartmentBurstnerFloor"),
+            Content.Load<Texture2D>("Sprites/ApartmentBurstnerWall"));
         _app = new GameApp(new GameAppDependencies(_font, _pixel, art));
     }
 

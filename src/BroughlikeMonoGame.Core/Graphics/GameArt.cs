@@ -14,4 +14,8 @@ public sealed record GameArt(
     Texture2D ApartmentBedroomFloor,
     Texture2D ApartmentBedroomWall,
     Texture2D ApartmentLivingRoomFloor,
-    Texture2D ApartmentLivingRoomWall);
+    Texture2D ApartmentLivingRoomWall,
+    Texture2D ApartmentHallwayFloor,
+    Texture2D ApartmentHallwayWall,
+    Texture2D ApartmentBurstnerFloor,
+    Texture2D ApartmentBurstnerWall);

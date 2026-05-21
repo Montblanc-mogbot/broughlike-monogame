@@ -592,17 +592,17 @@ public sealed class GameRenderer
             },
             ApartmentRoomStyle.Hallway => tile.Kind switch
             {
-                TileKind.Floor => (_art.ApartmentLivingRoomFloor, new Color(164, 138, 124)),
-                TileKind.Wall => (_art.ApartmentWall, new Color(160, 156, 126)),
+                TileKind.Floor => (_art.ApartmentHallwayFloor, Color.White),
+                TileKind.Wall => (_art.ApartmentHallwayWall, Color.White),
                 TileKind.Exit => (_art.ApartmentDoor, new Color(166, 126, 102)),
-                _ => (_art.ApartmentLivingRoomFloor, new Color(164, 138, 124)),
+                _ => (_art.ApartmentHallwayFloor, Color.White),
             },
             ApartmentRoomStyle.BurstnerRoom => tile.Kind switch
             {
-                TileKind.Floor => (_art.ApartmentBedroomFloor, new Color(214, 196, 186)),
-                TileKind.Wall => (_art.ApartmentBedroomWall, new Color(214, 214, 232)),
+                TileKind.Floor => (_art.ApartmentBurstnerFloor, Color.White),
+                TileKind.Wall => (_art.ApartmentBurstnerWall, Color.White),
                 TileKind.Exit => (_art.ApartmentDoor, new Color(210, 196, 180)),
-                _ => (_art.ApartmentBedroomFloor, new Color(214, 196, 186)),
+                _ => (_art.ApartmentBurstnerFloor, Color.White),
             },
             _ => tile.Kind switch
             {
