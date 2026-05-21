@@ -27,7 +27,9 @@ var checks = new List<(string name, Action run)>
     ("World-state persistence resumes an active run on boot", CheckRunStatePersistenceLoadsSavedRun),
     ("World-state persistence starts from currentStart when no active run exists", CheckWorldStateStartsFromCurrentStart),
     ("World-state persistence keeps the file and clears only activeRun when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns),
-    ("Apartment intro completion can update currentStart for future boots", CheckApartmentIntroUpdatesCurrentStart)
+    ("Apartment intro completion can update currentStart for future boots", CheckApartmentIntroUpdatesCurrentStart),
+    ("Content validator accepts the default registry", CheckContentValidatorAcceptsDefaultRegistry),
+    ("Content validator catches broken authoring references", CheckContentValidatorCatchesBrokenReferences)
 };
 
 foreach (var (name, run) in checks)
@@ -823,6 +825,77 @@ static void CheckWorldStateStartsFromCurrentStart()
     }
 }
 
+static void CheckContentValidatorAcceptsDefaultRegistry()
+{
+    var errors = ContentValidator.Validate(DungeonCatalog.CreateDefaultRegistry(), ItemCatalog.CreateTutorialItems(), DungeonCatalog.DefaultStartingDungeonId);
+    if (errors.Count > 0)
+    {
+        throw new Exception("expected default registry to validate cleanly:\n" + string.Join("\n", errors));
+    }
+}
+
+static void CheckContentValidatorCatchesBrokenReferences()
+{
+    var invalid = new DungeonDefinition(
+        "broken",
+        "Broken",
+        [
+            new FloorDefinition(
+                "broken-1",
+                "Broken Floor",
+                new FixedLevelSource(
+                    [
+                        "#########",
+                        "#@......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#.......#",
+                        "#......>#",
+                        "#########",
+                    ],
+                    monsters:
+                    [
+                        new MonsterPlacement(
+                            MonsterKind.Bird,
+                            new Point2(1, 1),
+                            new WorldObjectDefinition(WorldObjectDefinitionKind.ItemPickup, ItemId: "missing-drop"))
+                    ],
+                    worldObjects:
+                    [
+                        new WorldObjectPlacement(
+                            new WorldObjectDefinition(WorldObjectDefinitionKind.Portal, PortalDestination: new PortalDestination("missing-dungeon", 1)),
+                            new Point2(2, 1)),
+                        new WorldObjectPlacement(
+                            new WorldObjectDefinition(WorldObjectDefinitionKind.ItemPickup, ItemId: "missing-item"),
+                            new Point2(3, 1))
+                    ]),
+                new SpawnProfile(
+                    999,
+                    0,
+                    0,
+                    [new WeightedEntry<MonsterKind>(MonsterKind.Bird, 1)],
+                    initialFloorItemCount: 1,
+                    itemTable: [new WeightedEntry<string>("missing-table-item", 1)]),
+                new ExitDefinition(
+                    [
+                        new ExitRoute(new PortalDestination("tutorial", 99), RequiredItemId: "missing-exit-item")
+                    ]))
+        ]);
+
+    var errors = ContentValidator.Validate(new DungeonRegistry([invalid, TutorialDungeonDefinition.Create()]), ItemCatalog.CreateTutorialItems(), "missing-start");
+    var joined = string.Join("\n", errors);
+
+    ExpectContains(joined, "Starting dungeon 'missing-start' does not exist in the registry.");
+    ExpectContains(joined, "exit route points to impossible floor 99 in dungeon 'tutorial'.");
+    ExpectContains(joined, "exit route requires unknown item 'missing-exit-item'.");
+    ExpectContains(joined, "item table references unknown item 'missing-table-item'.");
+    ExpectContains(joined, "world object at 2,1 points to unknown dungeon 'missing-dungeon'.");
+    ExpectContains(joined, "world object at 3,1 references unknown item 'missing-item'.");
+    ExpectContains(joined, "death drop for 'Bird' references unknown item 'missing-drop'.");
+}
+
 static void CheckApartmentIntroUpdatesCurrentStart()
 {
     var storage = new InMemorySaveStorage();
@@ -1020,6 +1093,14 @@ static List<MonsterActor> GetMonsters(GameSession session)
 {
     var field = typeof(GameSession).GetField("_monsters", BindingFlags.NonPublic | BindingFlags.Instance)!;
     return (List<MonsterActor>)field.GetValue(session)!;
+}
+
+static void ExpectContains(string text, string expected)
+{
+    if (!text.Contains(expected, StringComparison.Ordinal))
+    {
+        throw new Exception($"expected to find '{expected}' in validation output:\n{text}");
+    }
 }
 
 static void SetProperty<T>(object target, string name, T value)

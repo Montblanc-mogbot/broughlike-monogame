@@ -50,6 +50,10 @@ public sealed class SpawnProfile
 
     public int InitialEnemyItemDropCount { get; }
 
+    public IReadOnlyList<WeightedEntry<MonsterKind>> MonsterTable => _monsterTable;
+
+    public IReadOnlyList<WeightedEntry<string>> ItemTable => _itemTable;
+
     public MonsterKind PickRandomMonster(Random random)
     {
         var roll = random.Next(1, _totalMonsterWeight + 1);

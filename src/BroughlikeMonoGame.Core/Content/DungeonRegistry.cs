@@ -12,7 +12,15 @@ public sealed class DungeonRegistry
         _dungeons = new Dictionary<string, DungeonDefinition>(StringComparer.OrdinalIgnoreCase);
         foreach (var dungeon in dungeons)
         {
-            _dungeons[dungeon.Id] = dungeon;
+            if (string.IsNullOrWhiteSpace(dungeon.Id))
+            {
+                throw new ArgumentException("Dungeon ids must be non-empty.", nameof(dungeons));
+            }
+
+            if (!_dungeons.TryAdd(dungeon.Id, dungeon))
+            {
+                throw new ArgumentException($"Duplicate dungeon id '{dungeon.Id}'.", nameof(dungeons));
+            }
         }
 
         if (_dungeons.Count == 0)
@@ -20,6 +28,10 @@ public sealed class DungeonRegistry
             throw new ArgumentException("Dungeon registry requires at least one dungeon.", nameof(dungeons));
         }
     }
+
+    public IEnumerable<DungeonDefinition> Dungeons => _dungeons.Values;
+
+    public bool Contains(string dungeonId) => _dungeons.ContainsKey(dungeonId);
 
     public DungeonDefinition Get(string dungeonId)
     {
