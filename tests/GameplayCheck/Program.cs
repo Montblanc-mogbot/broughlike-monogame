@@ -19,6 +19,8 @@ var checks = new List<(string name, Action run)>
     ("Apartment intro sends you back if you skip the black suit", CheckApartmentIntroRequiresBlackSuit),
     ("Apartment intro advances to the next dungeon with the black suit", CheckApartmentIntroAdvancesWithBlackSuit),
     ("Post-apartment hub routes into the tutorial dungeon", CheckHubStartRoutesIntoTutorial),
+    ("Success hub routes back into the tutorial dungeon", CheckHubSuccessRoutesIntoTutorial),
+    ("Failure hub routes back into the tutorial dungeon", CheckHubFailureRoutesIntoTutorial),
     ("Fixed floor definitions load through the shared runtime", CheckFixedFloorDefinitionLoads),
     ("Portal world objects can transition between dungeon definitions", CheckPortalTransitionsBetweenDungeons),
     ("Progress-gated portals stay locked until flags are unlocked", CheckProgressGatedPortal),
@@ -403,6 +405,42 @@ static void CheckHubStartRoutesIntoTutorial()
     if (session.BannerMessage != "Descend into the offices")
     {
         throw new Exception($"unexpected hub-start exit banner: {session.BannerMessage}");
+    }
+}
+
+static void CheckHubSuccessRoutesIntoTutorial()
+{
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), "hub-success");
+    session.StartGame();
+
+    Walk(session, (0, 1), (0, 1), (1, 0), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1));
+
+    if (session.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected success hub exit to route into tutorial, got {session.CurrentDungeonId}");
+    }
+
+    if (session.BannerMessage != "Re-enter the offices")
+    {
+        throw new Exception($"unexpected success hub exit banner: {session.BannerMessage}");
+    }
+}
+
+static void CheckHubFailureRoutesIntoTutorial()
+{
+    var session = CreateSession(DungeonCatalog.CreateDefaultRegistry(), "hub-failure");
+    session.StartGame();
+
+    Walk(session, (0, 1), (0, 1), (1, 0), (1, 0), (1, 0), (0, 1), (0, 1));
+
+    if (session.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected failure hub exit to route into tutorial, got {session.CurrentDungeonId}");
+    }
+
+    if (session.BannerMessage != "Try again")
+    {
+        throw new Exception($"unexpected failure hub exit banner: {session.BannerMessage}");
     }
 }
 
