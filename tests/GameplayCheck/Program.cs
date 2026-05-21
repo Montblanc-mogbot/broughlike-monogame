@@ -29,7 +29,8 @@ var checks = new List<(string name, Action run)>
     ("World-state persistence keeps the file and clears only activeRun when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns),
     ("Apartment intro completion can update currentStart for future boots", CheckApartmentIntroUpdatesCurrentStart),
     ("Content validator accepts the default registry", CheckContentValidatorAcceptsDefaultRegistry),
-    ("Content validator catches broken authoring references", CheckContentValidatorCatchesBrokenReferences)
+    ("Content validator catches broken authoring references", CheckContentValidatorCatchesBrokenReferences),
+    ("Toolkit sample pack validates and loads through the runtime", CheckToolkitSamplePack)
 };
 
 foreach (var (name, run) in checks)
@@ -894,6 +895,30 @@ static void CheckContentValidatorCatchesBrokenReferences()
     ExpectContains(joined, "world object at 2,1 points to unknown dungeon 'missing-dungeon'.");
     ExpectContains(joined, "world object at 3,1 references unknown item 'missing-item'.");
     ExpectContains(joined, "death drop for 'Bird' references unknown item 'missing-drop'.");
+}
+
+static void CheckToolkitSamplePack()
+{
+    var registry = new DungeonRegistry([
+        ToolkitSampleDefinition.Create(),
+        TutorialDungeonDefinition.Create(),
+        HubSuccessDefinition.Create(),
+        HubFailureDefinition.Create()
+    ]);
+
+    var errors = ContentValidator.Validate(registry, ItemCatalog.CreateTutorialItems(), "toolkit-sample");
+    if (errors.Count > 0)
+    {
+        throw new Exception("expected toolkit sample to validate cleanly:\n" + string.Join("\n", errors));
+    }
+
+    var session = CreateSession(registry, "toolkit-sample");
+    session.StartGame();
+
+    if (session.CurrentDungeonId != "toolkit-sample" || session.CurrentFloorDisplayName != "Sample Antechamber")
+    {
+        throw new Exception($"unexpected toolkit sample start: {session.CurrentDungeonId} / {session.CurrentFloorDisplayName}");
+    }
 }
 
 static void CheckApartmentIntroUpdatesCurrentStart()
