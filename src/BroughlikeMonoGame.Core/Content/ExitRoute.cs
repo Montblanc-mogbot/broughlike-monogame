@@ -7,4 +7,5 @@ public sealed record ExitRoute(
     string? RequiredProgressFlag = null,
     bool RequireProgressFlag = true,
     string? GrantsProgressFlag = null,
-    string? Label = null);
+    string? Label = null,
+    bool SetsCurrentStart = false);

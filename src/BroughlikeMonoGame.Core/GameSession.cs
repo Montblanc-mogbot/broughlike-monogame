@@ -59,6 +59,20 @@ public sealed class GameSession
 
     public string StartingDungeonId => _startingDungeonId;
 
+    public string CurrentStartDungeonId => _titleStartDungeonId;
+
+    public int CurrentStartFloorNumber => _titleStartFloor;
+
+    public float CurrentStartPlayerHp => _titleStartPlayerHp;
+
+    public float CurrentStartPlayerMaxHp => _titleStartPlayerMaxHp;
+
+    public IReadOnlyList<string?> CurrentStartInventoryItemIds => _titleStartInventoryItemIds ?? WorldState.CreateDefault("slot-1", _startingDungeonId).Player.InventoryItemIds;
+
+    public IReadOnlyList<string?> StashItemIds => _stashItemIds;
+
+    public IReadOnlyCollection<string> ProgressFlags => _progressFlags;
+
     public DungeonDefinition CurrentDungeon => _dungeons.Get(CurrentDungeonId);
 
     public int Level { get; private set; } = 1;
@@ -144,6 +158,16 @@ public sealed class GameSession
         InventoryCapacity = _titleStartInventoryItemIds.Count;
         Mode = GameMode.Title;
         BannerMessage = "Press any movement key to begin";
+    }
+
+    public void UpdateCurrentStart(string dungeonId, int floorNumber, float currentHp, float maxHp, IReadOnlyList<string?> inventoryItemIds)
+    {
+        _titleStartDungeonId = dungeonId;
+        _titleStartFloor = floorNumber;
+        _titleStartPlayerHp = currentHp;
+        _titleStartPlayerMaxHp = maxHp;
+        _titleStartInventoryItemIds = inventoryItemIds.ToArray();
+        InventoryCapacity = _titleStartInventoryItemIds.Count;
     }
 
     public void EnterDungeon(string dungeonId, int floorNumber, float? playerHp = null, IReadOnlyList<string?>? inventoryItemIds = null)
@@ -575,6 +599,11 @@ public sealed class GameSession
             if (!string.IsNullOrWhiteSpace(route.GrantsProgressFlag))
             {
                 UnlockProgressFlag(route.GrantsProgressFlag);
+            }
+
+            if (route.SetsCurrentStart)
+            {
+                UpdateCurrentStart(route.Destination.DungeonId, route.Destination.FloorNumber, Player.Hp, Player.MaxHp, Inventory.ToItemIds());
             }
 
             EnterDungeon(route.Destination.DungeonId, route.Destination.FloorNumber);

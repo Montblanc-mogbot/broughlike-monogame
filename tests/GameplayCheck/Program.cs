@@ -26,7 +26,8 @@ var checks = new List<(string name, Action run)>
     ("World-state persistence shows the title when no save exists", CheckRunStatePersistenceWithoutSave),
     ("World-state persistence resumes an active run on boot", CheckRunStatePersistenceLoadsSavedRun),
     ("World-state persistence starts from currentStart when no active run exists", CheckWorldStateStartsFromCurrentStart),
-    ("World-state persistence keeps the file and clears only activeRun when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns)
+    ("World-state persistence keeps the file and clears only activeRun when the run is no longer active", CheckRunStatePersistenceClearsInactiveRuns),
+    ("Apartment intro completion can update currentStart for future boots", CheckApartmentIntroUpdatesCurrentStart)
 };
 
 foreach (var (name, run) in checks)
@@ -819,6 +820,39 @@ static void CheckWorldStateStartsFromCurrentStart()
     if (session.HasProgressFlag("met_painter"))
     {
         throw new Exception("false story flags should not load as unlocked progress flags");
+    }
+}
+
+static void CheckApartmentIntroUpdatesCurrentStart()
+{
+    var storage = new InMemorySaveStorage();
+    var service = new WorldStateService(storage);
+    var persistence = new RunStatePersistence(service);
+    var session = CreateSession();
+    persistence.Initialize(session);
+    session.StartGame();
+
+    // walk through the apartment intro, get the suit, and take the final exit.
+    Walk(session, (0, -1), (0, -1), (1, 0), (0, -1));
+    Walk(session, (1, 0), (0, -1));
+    Walk(session, (0, 1), (-1, 0), (-1, 0), (-1, 0), (-1, 0));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+    Walk(session, (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0));
+    Walk(session, (1, 0), (1, 0), (1, 0), (0, 1), (0, 1), (0, 1));
+
+    if (session.CurrentDungeonId != "tutorial")
+    {
+        throw new Exception($"expected apartment success route to enter tutorial, got {session.CurrentDungeonId}");
+    }
+
+    persistence.Sync(session);
+    session.ShowTitle();
+    persistence.Sync(session);
+
+    var worldState = service.Load() ?? throw new Exception("expected world state after apartment progression");
+    if (worldState.CurrentStart.DungeonId != "tutorial")
+    {
+        throw new Exception($"expected apartment completion to set currentStart to tutorial, got {worldState.CurrentStart.DungeonId}");
     }
 }
 

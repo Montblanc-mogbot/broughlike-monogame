@@ -16,10 +16,12 @@ public static class TutorialDungeonFloors
                     new ExitRoute(
                         new PortalDestination("hub-success", 1, "Returned with the key"),
                         RequiredItemId: "power",
-                        Label: "Returned with the key"),
+                        Label: "Returned with the key",
+                        SetsCurrentStart: true),
                     new ExitRoute(
                         new PortalDestination("hub-failure", 1, "Returned empty-handed"),
-                        Label: "Returned empty-handed")
+                        Label: "Returned empty-handed",
+                        SetsCurrentStart: true)
                 ])
                 : null;
 

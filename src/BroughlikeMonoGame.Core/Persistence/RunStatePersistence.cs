@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace BroughlikeMonoGame.Core;
@@ -29,9 +30,22 @@ public sealed class RunStatePersistence
     public void Sync(GameSession session)
     {
         _worldState ??= WorldState.CreateDefault(_slotId, session.StartingDungeonId);
-        _worldState = session.Mode == GameMode.Running
-            ? _worldState with { ActiveRun = session.CreateSaveGame() }
-            : _worldState with { ActiveRun = null };
+
+        var storyFlags = new Dictionary<string, bool>(_worldState.StoryFlags);
+        foreach (var flag in session.ProgressFlags)
+        {
+            storyFlags[flag] = true;
+        }
+
+        _worldState = _worldState with
+        {
+            CurrentStart = new WorldStartState(session.CurrentStartDungeonId, session.CurrentStartFloorNumber),
+            Player = new WorldPlayerState(session.CurrentStartPlayerHp, session.CurrentStartPlayerMaxHp, session.CurrentStartInventoryItemIds.ToArray()),
+            StoryFlags = storyFlags,
+            StashItemIds = session.StashItemIds.ToArray(),
+            ActiveRun = session.Mode == GameMode.Running ? session.CreateSaveGame() : null
+        };
+
         _worldStates.Save(_worldState);
     }
 }
